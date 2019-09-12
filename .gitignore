@@ -1,0 +1,12 @@
+build*/
+./docs/doxygen*
+./example*
+*.swp
+*.swo
+*.pyc
+.idea/*
+.vscode/*
+venv*/
+*compile_commands*
+*/*.venv
+*third_party/*
