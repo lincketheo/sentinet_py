@@ -1,8 +1,8 @@
 
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup( 
         name='SentiNet',
         version='1.0',
-        packages=['src/control'],
+        packages=[package for package in find_packages() if package.startswith('sentinet')],
        )

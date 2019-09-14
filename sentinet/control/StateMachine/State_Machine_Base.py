@@ -1,13 +1,30 @@
 from multiprocessing import Process, Pipe
 from time import time
-from abc import ABC
+from abc import ABC, abstractmethod
+from sentinet.core.control.ControlClient import ControlClient
 
 class ActionStateBase(ABC):
 	def __init__(self,pipe): #initialize action state with comm pipe to state machinig
 		self.pipe=pipe
+		self.CC=ControlClient()
+		self.build_pub_sub()
 
 	@abstractmethod
 	def execute(self): #abstract method to execute state functions
+		pass
+
+	@abstractmethod
+	def build_pub_sub(self):
+		pass
+
+	def set_data(self,data):
+		self.data=data
+
+	def get_data(self):
+		return self.data
+
+	@abstractmethod
+	def serialize_data(self):
 		pass
 
 	def get_state(self): #get system state from state machine
@@ -20,7 +37,8 @@ class ActionStateBase(ABC):
 		self.pipe.send(value)
 
 	def end_state(self): #end state process
-		raise SystemExit
+		if not self.CC.quit():
+			self.CC.kill_all()
 
 class StateMachineBase(ABC):
 	def __init__(self,alphabet,state_list,t_max,init_state=None):
@@ -30,12 +48,11 @@ class StateMachineBase(ABC):
 		#init_state is an optional initial system state, if none will be set to first update state call
 		self.init_time=time()
 		self.t_max=t_max
-		self.transition_law=transition_law
 		self.state_list=state_list
 		if init_state is not None:
-			self.state=dict(alphabet[i]=init_state[i] for i in range(len(alphabet)))
+			self.state={alphabet[i]:init_state[i] for i in range(len(alphabet))}
 		else:
-			self.state=dict(alphabet[i]=None for i in range(len(alphabet)))
+			self.state={alphabet[i]: None for i in range(len(alphabet))}
 
 	@abstractmethod
 	def transition_law(self):

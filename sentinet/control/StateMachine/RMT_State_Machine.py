@@ -1,16 +1,19 @@
-import State_Machine_Base
+from sentinet.control.StateMachine.State_Machine_Base import StateMachineBase, ActionStateBase
+from sentinet.core.control.ControlClient import ControlClient, pub_params, sub_params, serve_params, req_params
 import numpy as np
 import math
+from sentinet.core.control import ControlClient
 from multiprocessing import Process, Pipe
-from time import time
+from time import time, sleep
 
 DISCRETIZATION_SIZE=100
 ATTRACTOR=[0,0]
 PATH_TOL=0.05 #meters
+CHECKSUM="CHECKSUM"
 
 class RMT_SM(StateMachineBase):
-	def __init__(self,alphabet,transition_law,state_list,t_max,init_state=None):
-		super().__init__(alphabet,transition_law,state_list,t_max,init_state=init_state)
+	def __init__(self,alphabet,state_list,t_max,init_state=None):
+		super().__init__(alphabet,state_list,t_max,init_state=init_state)
 		self.init_system()
 	
 	def init_system(self): #start in initial state
@@ -59,6 +62,16 @@ class mv2mine(ActionStateBase): #move to mining position action state
 		self.run_PD()
 		self.end_state()
 
+	def build_pub_sub(self):
+		self.pub_params=pub_params()
+		self.pub_params.get_data=self.serialize_data
+		self.pub_params.topic="cmd_vel"
+		self.pub_params.period=10
+		self.CC.spin(self.pub_params)
+
+	def serialize_data(self): #TODO
+		return 0
+
 	def select_target_zone(self): #select target pos from zone as np array, zone boundaries hard coded from reqs
 		return 0
 
@@ -67,39 +80,46 @@ class mv2mine(ActionStateBase): #move to mining position action state
 		self.path,self.dpath=Bez_Cur([self.state['x'],self.state['y']],self.target,ATTRACTOR)
 
 	def run_PD(self): #while loop run of PD controller
-		self.pipe_value(dict('moving'=True))
+		self.pipe_value(dict(moving=True))
 		self.np_pos=np.array([self.state['x'],self.state['y']])
 		self.vel=np.array([0,0])
 		self.pos_diff_norm=np.linalg.norm(self.np_pos-self.target)
 		while self.pos_diff_norm>PATH_TOL:
-			self.send_mv_comm(GLPDC(self.path,self.dpath,self.np_pos,self.vel,0))
+			self.set_data(GLPDC(self.path,self.dpath,self.np_pos,self.vel,0))
 			self.state=self.get_state()
 			self.vel=np.array([[self.state['x'],self.state['y']]])-self.np_pos
 			self.np_pos=np.array([self.state['x'],self.state['y']])
 			self.pos_diff_norm=np.linalg.norm(self.np_pos-self.target)
-		self.pipe_value(dict('moving'=False))
-
-	def send_mv_comm(self,lin_ang): #send lin_ang commands to low level
-		return 0
-
+		self.set_data([0,0])
+		sleep(0.05)
+		self.pipe_value(dict(moving=False))
 
 class mine(ActionStateBase): #mining action state
 	def __init__(self,pipe):
 		super().__init__(pipe)
+		self.done=False
+
+	def callback(self,string): #TODO
+		if string == 'done'+CHECKSUM:
+			self.pipe_value(dict(mining=False,full=True))
+			self.done=True
+		return string+CHECKSUM
+
+	def build_pub_sub(self): #TODO
+		self.CC.serve(self.callback)
 
 	def execute(self):
-		self.send_mine_comm()
-		self.wait4fin()
+		self.mine_flag_handler()
+
+	def serialize_data(self): #TODO
+		return 0
+
+	def mine_flag_handler(self): #wait for finished flag from low level
+		self.pipe_value(dict(mining=True))
+		self.CC.request("tcp://localhost:5555","start_mining")
+		while not self.done:
+			sleep(0.05)
 		self.end_state()
-
-	def wait4fin(self): #wait for finished flag from low level
-		return 0
-
-	def send_mine_comm(self): #send mining flag to low level
-		self.pipe_value(dict('mining'=True))
-
-		self.pipe_value(dict('mining'=False,'full'=True))
-		return 0
 
 class mv2dump(ActionStateBase): #moving to dumping zone mining state
 	def __init__(self,pipe):
@@ -111,7 +131,17 @@ class mv2dump(ActionStateBase): #moving to dumping zone mining state
 		self.run_PD()
 		self.end_state()
 
-	def select_target_zone(self): #hard conded return point based on reqs
+	def build_pub_sub(self):
+		self.pub_params=pub_params()
+		self.pub_params.get_data=self.serialize_data
+		self.pub_params.topic="cmd_vel"
+		self.pub_params.period=10
+		self.CC.spin(self.pub_params)
+
+	def serialize_data(self): #TODO
+		return 0
+
+	def select_target_zone(self): #hard coded return point based on reqs
 		return 0
 
 	def determine_path(self): #Bezier curve path generator
@@ -119,91 +149,109 @@ class mv2dump(ActionStateBase): #moving to dumping zone mining state
 		self.path,self.dpath=Bez_Cur([self.state['x'],self.state['y']],self.target,ATTRACTOR)
 
 	def run_PD(self): #while loop for PD controller
-		self.pipe_value(dict('moving'=True))
+		self.pipe_value(dict(moving=True))
 		self.np_pos=np.array([self.state['x'],self.state['y']])
 		self.vel=np.array([0,0])
 		self.pos_diff_norm=np.linalg.norm(self.np_pos-self.target)
 		while self.pos_diff_norm>PATH_TOL:
-			self.send_mv_comm(GLPDC(self.path,self.dpath,self.np_pos,self.vel,1))
+			self.set_data(GLPDC(self.path,self.dpath,self.np_pos,self.vel,1))
 			self.state=self.get_state()
 			self.vel=np.array([[self.state['x'],self.state['y']]])-self.np_pos
 			self.np_pos=np.array([self.state['x'],self.state['y']])
 			self.pos_diff_norm=np.linalg.norm(self.np_pos-self.target)
-		self.pipe_value(dict('moving'=False))
-
-	def send_mv_comm(self,lin_ang): #send lin_ang command to low level
-		return 0
+		self.set_data([0,0])
+		sleep(0.05)
+		self.pipe_value(dict(moving=False))
 
 class dump(ActionStateBase):
 	def __init__(self,pipe):
 		super().__init__(pipe)
+		self.done=False
+
+	def callback(self,string): #TODO
+		if string == 'done'+CHECKSUM:
+			self.pipe_value(dict(dumping=False,full=False))
+			self.done=True
+		return string+CHECKSUM
+
+	def build_pub_sub(self): #TODO
+		self.CC.serve(self.callback)
 
 	def execute(self):
-		self.send_dump_comm()
-		self.wait4fin()
+		self.dump_flag_handler()
+
+	def serialize_data(self): #TODO
+		return 0
+
+	def dump_flag_handler(self): #wait for finished flag from low level
+		self.pipe_value(dict(dumping=True))
+		self.CC.request("tcp://localhost:5555","start_dumping")
+		while not self.done:
+			sleep(0.05)
 		self.end_state()
-
-	def wait4fin(self): #wait for finished flag from low level
-		return 0
-
-	def send_dump_comm(self): #send dumping command to low level
-		self.pipe_value(dict('dumping'=True))
-
-		self.pipe_value(dict('dumping'=False,'full'=False))
-		return 0
 
 class init_state(ActionStateBase): #initialization state
 	def __init__(self,pipe):
 		super().__init__(pipe)
+		self.stowed=True
 
 	def execute(self):
 		self.dep_auger()
+		self.state=self.get_state()
 		self.find_self()
 		self.end_state()
 
+	def callback(self):
+		if string == 'done'+CHECKSUM:
+			self.pipe_value(dict(stowed=false))
+			self.stowed=False
+		return string+CHECKSUM
+
+	def build_pub_sub(self):
+		self.CC.serve(self.callback)
+
+	def serialize_data(self): #TODO
+		return 0
+
 	def dep_auger(self): #send auger deployment command to low level
-		self.pipe_value(dict('stowed'=False))		
-		return 0
+		self.CC.request("tcp://localhost:5555","deploy_auger")
+		while self.stowed:
+			sleep(0.05)		
 	
-	def scan_camera(): #scan camera across stepper limits
+	def scan_camera(): # TODO spin camera 360
 		return 0
 
-	def spin_pi(): #turn bot pi rad
-		return 0
-
-	def find_self(self): # if position is unknown scan camera, if still rotate bot pi rad and scan again
-		if self.state['x']==None:
+	def find_self(self): # if position is unknown scan camera
+		while self.state is None:
+			self.state=self.get_state()
+		if self.state['x'] is None:
 			self.scan_camera()
-			if self.state['x']==None:
-				self.spin_pi()
-				self.scan_camera()
 
 class soft_exit(ActionStateBase): #planned soft exit state
 	def __init__(self,pipe):
 		super().__init__(pipe)
+		self.done=False
 
 	def execute(self):
-		self.stop_motors()
-		self.send_dump_comm()
-		self.stow_auger()
-		self.pipe_value(dict('fin'=True))
+		self.exit_handler()
+		self.pipe_value(dict(fin=True))
 		self.end_state()
 
-	def stop_motors(self): #send motor kill command to low level
-		
-		self.pipe_value(dict('moving'=False))
+	def serialize_data(self): #TODO
 		return 0
 
-	def send_dump_comm(self): #send dumping command to low level
-		self.pipe_value(dict('dumping'=True))
+	def callback(self):
+		if string == 'done'+CHECKSUM:
+			self.done=True
+		return string+CHECKSUM
 
-		self.pipe_value(dict('dumping'=False,'full'=False))
-		return 0
+	def build_pub_sub(self):
+		self.CC.serve(self.callback)
 
-	def stow_auger(self): #send stow auger command to low level
-		
-		self.pipe_value(dict('stowed'=True))
-		return 0
+	def exit_handler(self):
+		self.CC.request("tcp://localhost:5555","soft_exit")
+		while not self.done:
+			sleep(0.05)
 
 def Bez_Cur(Start,End,Attractor,weight):
 	#Start End and Attractor must be x,y pairs, weight [-1,1]
