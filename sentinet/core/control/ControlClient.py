@@ -4,6 +4,47 @@ import threading
 
 POLLER_TIMEOUT = 10 # milliseconds
 
+def get_data_default():
+    return "default"
+
+def sub_default_callback(val):
+    print("Subscriber recieved " + val)
+
+def serve_default_callback(val):
+    print("server recieved val " + val)
+    return val + " response"
+
+def req_callback(val):
+    print("requester recieved val " + val)
+
+class pub_params():
+    def __init__():
+        self.address = "tcp://localhost:5555"
+        self.get_data = get_data_default
+        self.topic = "" 
+        self.period = 1
+        self.start_on_creation = True
+
+class sub_params():
+    def __init__():
+        self.address = "tcp://localhost:5556"
+        self.callback = sub_default_callback
+        self.topic = ""
+        self.start_on_creation = True
+
+class serve_params():
+    def __init__():
+        self.address = "tcp://localhost:5570"
+        self.callback = serve_default_callback
+        self.start_on_creation = True
+
+class req_params():
+    def __init__():
+        self.address = "tcp://localhost:5571"
+        self.get_data = get_data_default
+        self.callback = req_callback
+        self.start_on_creation = True
+
 ##
 # @brief A Space to maintain and stop threads with an override poll function
 class ThreadSpace(threading.Thread):
@@ -63,7 +104,7 @@ class PublisherThreadSpace(ThreadSpace):
         self.sock_addr = address
 
         print(address)
-        self.socket.bind(address)
+        self.socket.connect(address)
 
     ##
     # @brief Publisher poll simply publishes using the get data callback and the topic as a prefix
@@ -131,7 +172,7 @@ class ServerThreadSpace(ThreadSpace):
         self.callback = callback
 
         self.sock_addr = address
-        self.socket.bind(address)
+        self.socket.connect(address)
         
         self.poller = zmq.Poller()
         self.poller.register(self.socket, zmq.POLLIN)
@@ -257,7 +298,7 @@ class ControlClient:
     def init_self_publisher(self, publisher, address):
         if publisher:
             self.this_publisher = self.context.socket(zmq.PUB)
-            self.this_publisher.bind(address)
+            self.this_publisher.connect(address)
         else:
             self.this_publisher = None
 
@@ -296,6 +337,8 @@ class ControlClient:
             self.this_client.disconnect(address)
             return val
 
+    def publish(pub: pub_params):
+        self.publish(pub.address, pub.topic, pub.get_data, pub.period, pub.start_on_creation)
     def publish(self, sock_addr, topic, get_data, period, start_on_creation=False):
         if sock_addr not in self.publishers:
             self.publishers[sock_addr] = PublisherThreadSpace(context = self.context,\
@@ -315,6 +358,8 @@ class ControlClient:
         else:
             print("%s does not exist" % (sock_addr))
 
+    def subscribe(sub: sub_params):
+        self.subscribe(sub.address, sub.topic, sub.callback, sub.start_on_creation)
     def subscribe(self, sock_addr, topic, callback, period = -1, start_on_creation = False):
         if sock_addr not in self.subscribers:
             self.subscribers[sock_addr] = SubscriberThreadSpace(context = self.context, \
@@ -334,7 +379,9 @@ class ControlClient:
         else:
             print("%s does not exist" % (sock_addr))
 
-    def request(self, address, destination, get_data, callback, period, start_on_creation = False):
+    def request(req: req_params):
+        self.request(req.address, req.get_data, req.callback, req.period, req.start_on_creation)
+    def request(self, destination, get_data, callback, period, start_on_creation = False):
         if address not in self.requesters:
             self.requesters[address] = RequesterThreadSpace(context = self.context, \
                                                             period = period, \
@@ -354,6 +401,8 @@ class ControlClient:
         else:
             print("%s does not exist" % (sock_addr))
 
+    def serve(srv: serve_params):
+        serve(srv.address, srv.callback, srv.start_on_creation)
     def serve(self, address, callback, period = -1, start_on_creation = False):
         if address not in self.servers:
             self.servers[address] = ServerThreadSpace(context = self.context, \
