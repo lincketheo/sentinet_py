@@ -1,8 +1,8 @@
-from sentinet.control.StateMachine.State_Machine_Base import StateMachineBase, ActionStateBase
-from sentinet.core.control.ControlClient import ControlClient, pub_params, sub_params, serve_params, req_params
+from src.control.StateMachine.State_Machine_Base import StateMachineBase, ActionStateBase
+from src.core.control.ControlClient import ControlClient, pub_params, sub_params, serve_params, req_params
 import numpy as np
 import math
-from sentinet.core.control import ControlClient
+from src.core.control import ControlClient
 from multiprocessing import Process, Pipe
 from time import time, sleep
 
@@ -12,6 +12,8 @@ PATH_TOL=0.05 #meters
 CHECKSUM="CHECKSUM"
 
 class RMT_SM(StateMachineBase):
+	#mining_zone=[[x_lower,x_upper],[y_lower,y_upper]]
+	#dumping_zone=[[x_lower,x_upper],[y_lower,y_upper]]
 	def __init__(self,alphabet,state_list,t_max,init_state=None):
 		super().__init__(alphabet,state_list,t_max,init_state=init_state)
 		self.init_system()
@@ -22,7 +24,102 @@ class RMT_SM(StateMachineBase):
 		self.run_SM()
 	
 	def transistion_law(self): #transition law defined in RMT SM Definition, see Drive
-		return 0
+		run_time=time()-self.init_time
+		# Soft Exit Conditions
+		if self.state['s'] == 0:
+			return 5
+		if run_time >= self.t_max:
+			return 5
+
+		if self.curr_state == 0: # Transition from state init state
+			if (self.state['x'] is None 
+				and self.state['y'] is None 
+				and self.state['th'] is None 
+				and self.state['m'] is False 
+				and self.state['d'] is False 
+				and self.state['f'] is False):
+				return 0
+
+			elif (self.state['x'] is not None 
+				and self.state['y'] is not None 
+				and self.state['th'] is not None 
+				and self.state['a'] is False 
+				and self.state['v'] is False 
+				and self.state['m'] is False 
+				and self.state['d'] is False 
+				and self.state['f'] is False):
+				return 1
+
+		elif self.curr_state == 1: # Transition from mv2mine
+			if ((self.state['x'] < self.mining_zone[0][0] or self.state['x'] > self.mining_zone[0][1])
+				and (self.state['y'] < self.mining_zone[1][0] or self.state['y'] > self.mining_zone[1][1]) 
+				and self.state['a'] is False  
+				and self.state['m'] is False 
+				and self.state['d'] is False 
+				and self.state['f'] is False):
+				return 1
+			elif ((self.state['x'] > self.mining_zone[0][0] and self.state['x'] < self.mining_zone[0][1])
+				and (self.state['y'] > self.mining_zone[1][0] and self.state['y'] < self.mining_zone[1][1])
+				and self.state['a'] is False
+				and self.state['m'] is False
+				and self.state['d'] is False
+				and self.state['f'] is False
+				and self.state['v'] is False):
+				return 2
+
+
+		elif self.curr_state == 2: # Transition from mine
+			if ((self.state['x'] > self.mining_zone[0][0] and self.state['x'] < self.mining_zone[0][1])
+				and (self.state['y'] > self.mining_zone[1][0] and self.state['y'] < self.mining_zone[1][1])
+				and self.state['a'] is False
+				and self.state['m'] is True
+				and self.state['d'] is False
+				and self.state['f'] is False
+				and self.state['v'] is False):
+				return 2
+
+			elif ((self.state['x'] > self.mining_zone[0][0] and self.state['x'] < self.mining_zone[0][1])
+				and (self.state['y'] > self.mining_zone[1][0] and self.state['y'] < self.mining_zone[1][1])
+				and self.state['a'] is False
+				and self.state['m'] is False
+				and self.state['d'] is False
+				and self.state['f'] is True
+				and self.state['v'] is False):
+				return 3
+		elif self.curr_state == 3: # Transition from mv2dump
+			if ((self.state['x'] < self.dumping_zone[0][0] or self.state['x'] > self.dumping_zone[0][1])
+				and (self.state['y'] < self.dumping_zone[1][1] or self.state['y'] > self.dumping_zone[1][1])
+				and self.state['a'] is False
+				and self.state['m'] is False
+				and self.state['d'] is False
+				and self.state['f'] is True):
+				return 3
+			elif ((self.state['x'] > self.dumping_zone[0][0] and self.state['x'] < self.dumping_zone[0][1])
+				and (self.state['y'] > self.dumping_zone[1][0] and self.state['y'] < self.dumping_zone[1][1])
+				and self.state['a'] is False
+				and self.state['m'] is False
+				and self.state['d'] is False
+				and self.state['f'] is True
+				and self.state['v'] is False):
+				return 4
+
+		elif self.curr_state == 4: # Transition from dump
+			if ((self.state['x'] > self.dumping_zone[0][0] and self.state['x'] < self.dumping_zone[0][1])
+				and (self.state['y'] > self.dumping_zone[1][0] and self.state['y'] < self.dumping_zone[1][1])
+				and self.state['a'] is False
+				and self.state['m'] is False
+				and self.state['d'] is True
+				and self.state['f'] is True
+				and self.state['v'] is False):
+				return 4
+			elif ((self.state['x'] > self.dumping_zone[0][0] and self.state['x'] < self.dumping_zone[0][1])
+				and (self.state['y'] > self.dumping_zone[1][0] and self.state['y'] < self.dumping_zone[1][1])
+				and self.state['a'] is False
+				and self.state['m'] is False
+				and self.state['d'] is False
+				and self.state['f'] is False
+				and self.state['v'] is False):
+				return 1
 
 	def update_system_state(self): #update sys_state from localizer
 		pos=self.localizer_callback()
