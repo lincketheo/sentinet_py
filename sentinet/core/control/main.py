@@ -1,10 +1,13 @@
+#!/usr/bin/env python3
+
+
 from ControlClient import ControlClient
 import time
 
 
 def get_data():
     print("Sending data")
-    return "hi there"
+    return "test"
 
 if __name__ == '__main__':
     a = ControlClient(False, (False, ""))
