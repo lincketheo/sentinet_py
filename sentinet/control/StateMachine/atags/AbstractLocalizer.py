@@ -1,3 +1,4 @@
+
 from abc, import ABC, abstractmethod
 
 class AbstractLocalizer(ABC)
@@ -16,3 +17,4 @@ class AbstractLocalizer(ABC)
         @abstractmethod
         def acceleration(self):
             pass
+
