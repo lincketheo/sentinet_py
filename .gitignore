@@ -10,3 +10,4 @@ venv*/
 *compile_commands*
 */*.venv
 *third_party/*
+__pycache__
