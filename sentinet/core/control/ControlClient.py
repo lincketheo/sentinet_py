@@ -3,6 +3,39 @@ import time
 import threading
 
 POLLER_TIMEOUT = 10 # milliseconds
+    #
+    #  ##
+    #  # @brief Request concurrently
+    #  #
+    #  # @param address The address to connect to
+    #  # @param message The message to send_string to the server
+    #  #
+    #  # @return The response if any from the server
+    #  def request_concurrent(self, address, message):
+    #      if self.this_client == None:
+    #          print("Error, no concurrent client")
+    #      else:
+    #          self.this_client.connect(address)
+    #          self.this_client.send_string(message)
+    #          val = self.this_client.recv_string()
+    #          self.this_client.disconnect(address)
+    #          return val
+    #
+    #  def publish(pub: pub_params):
+    #      self.publish(pub.address, pub.topic, pub.get_data, pub.period, pub.start_on_creation)
+    #  def publish(self, sock_addr, topic, get_data, period, start_on_creation=False):
+    #      if sock_addr not in self.publishers:
+    #          self.publishers[sock_addr] = PublisherThreadSpace(context = self.context,\
+    #                                                                      period = period,\
+    #                                                                      topic = topic,\
+    #                                                                      get_data = get_data, \
+    #                                                                      address = sock_addr)
+    #          if start_on_creation:
+    #              self.publishers[sock_addr].start()
+    #      else:
+    #          print("Thread %s already in publishers" % (sock_addr))
+    #
+
 
 def get_data_default():
     return "default"

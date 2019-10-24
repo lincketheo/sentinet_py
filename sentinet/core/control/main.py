@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+
+
 from ControlClient import ControlClient
 import time
 
