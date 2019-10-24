@@ -1,159 +1,187 @@
-# TODO - I put a lot of numbers here, and that's bad practice
-# We need to replace all numerical constants in a way that we 
-# can update the protocol version whilst being able to change the 
-# message structure and individual element size
-
-
-# Some global vars - might want a keys file
-# Like I did with c
-PROTOCOL = 1
-DATA_PACKET = 1
-PING = 2
-EMPTY = 0
-ENDIAN = 'big'
-BYTE_SIZE = 4096
-
-# Type codes - might be a better way of doing this
-INVALID = '\0'
-CHAR = 'c'
-BYTE_TYPE = 'y'
-BOOL = 'b'
-INT8 = 'p'
-UINT8 = 'r'
-UINT16 = 'q'
-INT32 = 'i'
-INT = INT32
-UINT32 = 'u'
-INT64 = 't'
-FLOAT = 'f'
-DOUBLE = 'd'
-STRING = 's'
-OBJECT = 'o'
-ARRAY = 'a'
-
-# A single data element 
-# This is more of a constant data element
-# within a serialized item
-class DataElement:
-    def __init__(self, value, data_size, index, signed):
-        self.data_size = data_size
-        self.signed = signed
-        self.data = value
-        self.index = index
-
-    def serialize(self) -> bytes:
-        return self.data.to_bytes(self.data_size, byteorder = ENDIAN, signed = self.signed)
+import sys
+from struct import pack
+from MessageKeys import *
 
 
 class Data_Message:
 
     def __init__(self, incomming_message=0): 
+
+        # Recieve the default header for backwards compatability sake
+        self.header = default_header
+
+        # Get the size of the header (TODO - this is still to explicit)
+        self.header_size = self.header["FIELDS"].index + self.header["FIELDS"].data_size
+
+        # Recieving a message
         if incomming_message is not 0:
             self.message = incomming_message
-            # TODO This looks pretty ugly, 
-            # considering get_header... passes the same numbers as DataElement (1, 0 == 1, 0)
-            self.header = {
-                    "PROTOCOL" : DataElement(self.get_header_element_raw(1, 0), 1, 0, False),
-                    "OPCODE" : DataElement(self.get_header_element_raw(1, 1), 1, 1, False),
-                    "FUNCFLAGS" : DataElement(self.get_header_element_raw(2, 2), 2, 2, False),
-                    "CHECKSUM" : DataElement(self.get_header_element_raw(2, 4), 2, 4, False),
-                    "BYTE_LENGTH" : DataElement(self.get_header_element_raw(4, 6), 4, 6, False),
-                    "FIELDS" : DataElement(self.get_header_element_raw(2, 10), 2, 10, False) }
+
+            # update values by reading elements from within the buffered message
+            for i in self.header.values():
+                i.data = self.get_header_element_raw(i.data_size, i.index) 
+
+        # Not recieving a message, so we need to make a new message
         else:
-            self.header = {
-                    "PROTOCOL" : DataElement(PROTOCOL, 1, 0, False),
-                    "OPCODE" : DataElement(DATA_PACKET, 1, 1, False),
-                    "FUNCFLAGS" : DataElement(EMPTY, 2, 2, False),
-                    "CHECKSUM" : DataElement(EMPTY, 2, 4, False),
-                    "BYTE_LENGTH" : DataElement(13, 4, 6, False),
-                    "FIELDS" : DataElement(EMPTY, 2, 10, False) }
+            self.message = bytearray(self.header_size) 
+            self.message.append(0)
+            if not self.serialize_header():
+                print("Exiting")
+                sys.exit(1)
 
-            self.message = bytearray(13) 
-
-            self.serialize_header()
 
     # Emplaces all header elements in self.header
     # into the message buffer
     def serialize_header(self):
-        i = 0
+        i = 0 
+        # For every data element, serialize it into the header
         for element in self.header.values():
+            # Check for indexes and make sure they match
+            if i != element.index:
+                print("Error - invalid header index")
+                return False
+
+            # Otherwise, serialize the data element
             self.message[i:i+element.data_size] = element.serialize()
+
+            # Incriment index by data size so there is no structure padding
             i += element.data_size
+
+        # Add a null terminator
         self.message[i] = 0
+        return True
          
-    # Returns element at the header
+    # Returns element that is in the header
     def get_header_element(self, element):
+        # This checks for the map not the message
+        # bytearray
         if element in self.header:
             return self.header[element].data
         else:
             print("Invalid elemet")
 
+    # Returns element that is in the message header
     def get_header_element_raw(self, size, index):
+        # Utilizing the fact that all our header elements can be expressed as 
+        # unsigned ints of arbitrary sizes - a little too explicit, may want to change
         return int.from_bytes(self.message[index:index+size], byteorder = ENDIAN, signed=False)
 
+    # Serialize a data element (not in the header that is)
     def serialize_data(self, data, bytes_size, type_code):
         # Check data type, otherwise, we
         # simply represent it as an int
+        # TODO add more cases here - maybe a switch table
         if(type(data) == str):
+
+            # The byte size should always be 1 more than the size of the string 
+            # To account for c style null terminator
             if(bytes_size != len(data) + 1):
                 print("ERROR")
-                return 0
-            # Add a string null terminator
+                return 1
+
+            # Add a string null terminator for C 
+            # and turn it into bytes
             data = data.encode('utf-8') + b"\x00"
-            bytes_size
-        else:
+
+        # simply convert the data to bytes
+        # TODO im pretty sure this is fine for floats, but I'd have to check
+        elif(type(data) == int):
             # Convert data to bytes
             data = data.to_bytes(bytes_size, byteorder = ENDIAN, signed = False)
+        elif(type(data) == float):
+            # Convert data to bytes
+            data = pack('f', data)
 
         # Append data
+
+        # First, the message size (1 byte)
         self.message.append(bytes_size)
+
+        # Second the message type code in utf (1 byte)
         self.message.append(ord(type_code))
+
+        # Third, the data
         self.message.extend(data)
+
+        # Fourth the null terminator
         self.message.append(0)
 
-        # Update header fields
+        # Update header fields and byte length
         self.header["FIELDS"].data += 1
         self.header["BYTE_LENGTH"].data += 3 + bytes_size
 
+# A ping message is a lot easier to work with
+# Because it's one big header
 class Ping_Message:
 
     def __init__(self, incomming_message = 0):
+
+        # Set it as default to have a standard even if 
+        # we simply recieve the message
+        self.header = default_ping
+        self.header_size = default_ping["EXCESS"].index + default_ping["EXCESS"].data_size + 1
+
+        # If we have no incomming message, create a new packet
+        # This could be done in a ternerary, but there may be more we 
+        # want to do so I'm leaving it as if else
         if incomming_message == 0:
-            self.header = {
-                    "PROTOCOL" : DataElement(PROTOCOL, 1, 0, False),
-                    "OPCODE" : DataElement(PING, 1, 1, False),
-                    "TYPE" : DataElement(EMPTY, 1, 2, False),
-                    "CODE" : DataElement(EMPTY, 2, 3, False),
-                    "CHECKSUM" : DataElement(EMPTY, 2, 5, False),
-                    "EXCESS" : DataElement(EMPTY, 8, 7, False) }
-            self.message = bytearray(16)
+            self.message = bytearray(self.header_size)
+
         else: 
+            # Check the incomming message - see below TODO
+            if self.header_size != len(incomming_message):
+                print("Error incomming message size does not match a standard ping message")
+
+            # Copy the message over
             self.message = incomming_message
-            self.header = {
-                    "PROTOCOL" : DataElement(self.get_element_raw(1, 0), 1, 0, False),
-                    "OPCODE" : DataElement(self.get_element_raw(1, 1), 1, 1, False),
-                    "TYPE" : DataElement(self.get_element_raw(1, 2), 1, 2, False),
-                    "CODE" : DataElement(self.get_element_raw(2, 3), 2, 3, False),
-                    "CHECKSUM" : DataElement(self.get_element_raw(2, 5), 2, 5, False),
-                    "EXCESS" : DataElement(self.get_element_raw(8, 7), 8, 7, False) }
 
+            # Then itterate through to update the dict values
+            for i in self.header.values():
+                i.data = self.get_header_element_raw(i.data_size, i.index) 
 
+            # TODO - put all incomming message checks in their
+            # own method called validate incomming message
+            # Right now, I'm just serializing and expecting
+            # nothing to change
+            if not self.serialize():
+                print("Exiting")
+                sys.exit(1)
+
+            if self.message != incomming_message:
+                print("Error parsing incomming message")
+
+    # Serialize the data within our message
     def serialize(self):
         i = 0
+
+        # Itterate through all items in the dict and update byte array
         for element in self.header.values():
+
+            # Check for index matching
+            if i != element.index:
+                print("Error serializing ping, indexes are off")
+                return False
+
+            # Otherwise, copy data into the buffer and increment the index
             self.message[i:i+element.data_size] = element.serialize()
             i += element.data_size
-        self.message[i] = 0
 
+        # A null terminator
+        self.message[i] = 0
+        return True
+
+    # Gets element at a specified key
     def get_element(self, element):
         if element in self.header:
             return self.header[element].data
         else:
             print("Invalid elemet")
 
+    # Gets element at specified index and size in byte form
     def get_element_raw(self, size, index):
         return int.from_bytes(self.message[index:index+size], byteorder = ENDIAN, signed=False)
 
+    # Sets data element in dict (not message)
     def set_element(self, element, value):
         if element in self.header:
             self.header[element].data = value
@@ -163,34 +191,77 @@ class Ping_Message:
     
 
 if __name__ == '__main__':
-    #  a = Data_Message()
-    #  print(a.message)
-    #  print(a.get_header_element("PROTOCOL"))
-    #
-    #  b = Data_Message(a.message)
-    #  print(b.message)
-    #  b.serialize_data(5, 4, 'i')
-    #  print(b.message)
-    #  b.serialize_data("Hello", len("Hello") + 1, 's')
-    #  print(b.message)
-    #  b.serialize_data('g', 10, 's')
-    #  print(b.message)
-    #  b.serialize_header()
-    #  print(b.message)
-    #  print(len(b.message))
-    #  b.serialize_data("Hello", len("Hello") + 1, 's')
-    #  b.serialize_data("Hello", len("Hello") + 1, 's')
-    #  b.serialize_header()
-    #  print(len(b.message))
-    #  print(b.header["BYTE_LENGTH"].data)
-    a = Ping_Message()
-    print(a.message)
-    a.serialize()
-    print(a.message)
-    a.set_element("TYPE", 4)
-    print(a.message)
-    a.serialize()
-    print(a.message)
-    b = Ping_Message(a.message)
-    print(b.message)
+
+    # Example:
+    dm1 = Data_Message()
+
+    # Serialize some data
+    dm1.serialize_data("Hello", 6, STRING)
+    dm1.serialize_data(5.9999123123, 4, FLOAT)
+
+    # Shouldn't serialize because the length does not
+    # account for null terminator
+    print("Expecting ERROR: ")
+    dm1.serialize_data("invalid", len("invalid"), STRING)
+
+    # Should serialize
+    dm1.serialize_data("valid", len("valid") + 1, STRING)
+    
+    # Update the header
+    dm1.serialize_header()
+
+    # Print some data
+    print(dm1.message)
+    print("Header byte length: " + str(dm1.header["BYTE_LENGTH"].data))
+    print("Actual byte length: " + str(len(dm1.message)))
+
+    # Note that get_header_element_raw should never be used outside,
+    # I'm just using it to demonstrate
+    print("Byte length in mes: " + str(dm1.get_header_element_raw(4, 6)))
+
+    dm2 = Data_Message(dm1.message)
+    dm2.serialize_header()
+
+    # Print some data
+    print(dm2.message)
+    print("Header byte length: " + str(dm2.header["BYTE_LENGTH"].data))
+    print("Actual byte length: " + str(len(dm2.message)))
+
+    # Note that get_header_element_raw should never be used outside,
+    # I'm just using it to demonstrate
+    print("Byte length in mes: " + str(dm2.get_header_element_raw(4, 6)))
+
+
+    pm1 = Ping_Message()
+    pm1.set_element("TYPE", 0x2)
+    pm1.set_element("CHECKSUM", 0x3)
+    pm1.set_element("CODE", 1)
+    pm1.set_element("EXCESS", 123123123)
+    pm1.serialize()
+    print(pm1.message)
+    print("123123123 = " + str(pm1.get_element_raw(8, 7)))
+    print("3 = " + str(pm1.get_element_raw(2, 5)))
+    print("1 = " + str(pm1.get_element_raw(2, 3)))
+    print("2 = " + str(pm1.get_element_raw(1, 2)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
