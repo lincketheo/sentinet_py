@@ -110,7 +110,7 @@ class PublisherThreadSpace(ThreadSpace):
     # @brief Publisher poll simply publishes using the get data callback and the topic as a prefix
     def poll(self):
         body = str(self.callback())
-        self.socket.send_string(("%s:%s" % (self.topic, body)))
+        self.socket.send_multipart([self.topic.encode('utf-8'), body.encode('utf-8')])
         time.sleep(self.period)
 
 
@@ -142,7 +142,7 @@ class RequesterThreadSpace(ThreadSpace):
         self.socket.connect(self.sock_addr)
 
     def poll(self):
-        self.socket.send_string("%d %d" % (self.topic, self.get_request()))
+        self.socket.send_multipart([self.topic, self.get_request()])
         ret = self.socket.recv_string()
         self.recieve_request(ret)
         time.sleep(self.period)

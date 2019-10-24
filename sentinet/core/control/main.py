@@ -4,7 +4,7 @@ import time
 
 def get_data():
     print("Sending data")
-    return "hi there"
+    return "test string "
 
 if __name__ == '__main__':
     a = ControlClient(False, (False, ""))
