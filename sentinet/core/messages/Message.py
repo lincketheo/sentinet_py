@@ -1,6 +1,6 @@
 import sys
 from struct import pack
-from MessageKeys import *
+from sentinet.core.messages.MessageKeys import *
 
 
 class Data_Message:

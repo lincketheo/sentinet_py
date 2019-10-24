@@ -1,8 +1,8 @@
-from src.control.StateMachine.State_Machine_Base import StateMachineBase, ActionStateBase
-from src.core.control.ControlClient import ControlClient, pub_params, sub_params, serve_params, req_params
+from sentinet.control.StateMachine.State_Machine_Base import StateMachineBase, ActionStateBase
+from sentinet.core.control.ControlClient import ControlClient, pub_params, sub_params, serve_params, req_params
 import numpy as np
 import math
-from src.core.control import ControlClient
+from sentinet.core.control import ControlClient
 from multiprocessing import Process, Pipe
 from time import time, sleep
 

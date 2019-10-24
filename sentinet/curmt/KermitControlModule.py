@@ -1,4 +1,5 @@
 from sentinet.core.control import ControlClient
+from sentinet.core.messages.Message import Data_Message, Ping_Message
 
 cmd_vel = "cmd_vel"
 
@@ -17,6 +18,9 @@ class KermitControlModule:
         self.angular = 0.0
         self.mining = False
         self.dumping = False
+
+        self.data_buffer = Data_Message()
+        self.ping_buffer = Ping_Message()
         # TODO NEED TO IMPLIMENT MESSAGE BUFFER HERE
 
     def get_data(self) -> bytes:
