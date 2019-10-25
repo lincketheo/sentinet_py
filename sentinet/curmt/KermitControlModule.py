@@ -1,5 +1,7 @@
 from sentinet.core.control import ControlClient
 from sentinet.core.messages.Message import Data_Message, Ping_Message
+from sentinet.core.messages.MessageKeys import *
+from struct import pack
 
 cmd_vel = "cmd_vel"
 
@@ -21,11 +23,19 @@ class KermitControlModule:
 
         self.data_buffer = Data_Message()
         self.ping_buffer = Ping_Message()
+        self.data_buffer.serialize_data(0, 4, FLOAT)
+        self.data_buffer.serialize_data(0, 4, FLOAT)
         # TODO NEED TO IMPLIMENT MESSAGE BUFFER HERE
 
     def get_data(self) -> bytes:
-        print("Sending data")
+        self.data_buffer.set_data(pack('f', self.angular), 4, FLOAT, self.data_buffer.header_size + 1)
+        self.data_buffer.set_data(pack('f', self.linear), 4, FLOAT, self.data_buffer.header_size + 8)
+        print("Sending: ")
+        print(self.data_buffer.message)
+        print(self.linear, self.angular)
         return "temporary".encode('utf-8')
+
+    
 
     def start_kermit(self):
         self.control = ControlClient(False, (False, ""))

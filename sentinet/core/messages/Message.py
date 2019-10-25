@@ -110,6 +110,18 @@ class Data_Message:
         self.header["FIELDS"].data += 1
         self.header["BYTE_LENGTH"].data += 3 + bytes_size
 
+    def set_data(self, data: bytes, byte_size: int, type_code, byte_index):
+        if self.header["BYTE_LENGTH"].data < byte_index + byte_size + 3:
+            print("Index to high, pushing to the top of stack")
+            self.serialize_data(data, byte_size, type_code)
+            return True
+        # Itterate through the message
+        print(self.message)
+        self.message[byte_index] = byte_size
+        self.message[byte_index + 1] = ord(type_code)
+        self.message[byte_index + 2:byte_index + byte_size + 2] = data
+        self.message[byte_index + byte_size + 2] = 0
+         
 # A ping message is a lot easier to work with
 # Because it's one big header
 class Ping_Message:
@@ -223,6 +235,7 @@ if __name__ == '__main__':
     dm2.serialize_header()
 
     # Print some data
+
     print(dm2.message)
     print("Header byte length: " + str(dm2.header["BYTE_LENGTH"].data))
     print("Actual byte length: " + str(len(dm2.message)))
@@ -243,25 +256,3 @@ if __name__ == '__main__':
     print("3 = " + str(pm1.get_element_raw(2, 5)))
     print("1 = " + str(pm1.get_element_raw(2, 3)))
     print("2 = " + str(pm1.get_element_raw(1, 2)))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

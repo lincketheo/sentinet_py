@@ -6,6 +6,8 @@ if __name__ == '__main__':
 
     a.start_kermit()
 
+    
+
     sleep(4)
 
     a.set_linear(7.0)
@@ -13,5 +15,7 @@ if __name__ == '__main__':
     sleep(5)
 
     a.set_angular(5.6)
+    
+    sleep(4)
 
     a.quit_kermit()
