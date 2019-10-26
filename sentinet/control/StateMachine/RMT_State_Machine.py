@@ -10,7 +10,8 @@ DISCRETIZATION_SIZE=100
 ATTRACTOR=[0,0]
 PATH_TOL=0.05 #meters
 CHECKSUM="CHECKSUM"
-
+# todo: better transition law
+#		action states: getter, callback, requester
 class RMT_SM(StateMachineBase):
 	#mining_zone=[[x_lower,x_upper],[y_lower,y_upper]]
 	#dumping_zone=[[x_lower,x_upper],[y_lower,y_upper]]
