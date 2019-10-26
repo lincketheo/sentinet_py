@@ -50,23 +50,23 @@ def serve_default_callback(val):
 def req_callback(val):
     print("requester recieved val " + val)
 
-class pub_params():
-    def __init__():
+class pub_params:
+    def __init__(self):
         self.address = "tcp://localhost:5555"
         self.get_data = get_data_default
         self.topic = "" 
         self.period = 1
         self.start_on_creation = True
 
-class sub_params():
-    def __init__():
+class sub_params:
+    def __init__(self):
         self.address = "tcp://localhost:5556"
         self.callback = sub_default_callback
         self.topic = ""
         self.start_on_creation = True
 
-class serve_params():
-    def __init__():
+class serve_params:
+    def __init__(self):
         self.address = "tcp://localhost:5570"
         self.callback = serve_default_callback
         self.start_on_creation = True
@@ -370,7 +370,7 @@ class ControlClient:
             self.this_client.disconnect(address)
             return val
 
-    def publish(pub: pub_params):
+    def spin_publisher(self, pub: pub_params):
         self.publish(pub.address, pub.topic, pub.get_data, pub.period, pub.start_on_creation)
     def publish(self, sock_addr, topic, get_data, period, start_on_creation=False):
         if sock_addr not in self.publishers:
@@ -391,7 +391,7 @@ class ControlClient:
         else:
             print("%s does not exist" % (sock_addr))
 
-    def subscribe(sub: sub_params):
+    def spin_subscriber(self, sub: sub_params):
         self.subscribe(sub.address, sub.topic, sub.callback, sub.start_on_creation)
     def subscribe(self, sock_addr, topic, callback, period = -1, start_on_creation = False):
         if sock_addr not in self.subscribers:
@@ -412,7 +412,7 @@ class ControlClient:
         else:
             print("%s does not exist" % (sock_addr))
 
-    def request(req: req_params):
+    def spin_requester(self, req: req_params):
         self.request(req.address, req.get_data, req.callback, req.period, req.start_on_creation)
     def request(self, destination, get_data, callback, period, start_on_creation = False):
         if address not in self.requesters:
@@ -434,7 +434,7 @@ class ControlClient:
         else:
             print("%s does not exist" % (sock_addr))
 
-    def serve(srv: serve_params):
+    def spin_server(self, srv: serve_params):
         serve(srv.address, srv.callback, srv.start_on_creation)
     def serve(self, address, callback, period = -1, start_on_creation = False):
         if address not in self.servers:

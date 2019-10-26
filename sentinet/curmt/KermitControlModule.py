@@ -1,70 +1,96 @@
-from sentinet.core.control import ControlClient
+from sentinet.core.control import ControlClient, pub_params, sub_params
 from sentinet.core.messages.Message import Data_Message, Ping_Message
 from sentinet.core.messages.MessageKeys import *
 from struct import pack
 
-cmd_vel = "cmd_vel"
-
-
-
-PUB_ADDR = "tcp://localhost:5555"
-SUB_ADDR = "tcp://localhost:5556"
-SERVE_ADDR = "tcp://localhost:5557"
-REQ_ADDR = "tcp://localhost:5558"
+CMD_VEL = "tcp://localhost:5555"
+DATA_ADDR = "tcp://localhost:5556"
+COMMAND_ADDR = "tcp://localhost:5570"
+REAL_TIME_ADDR = "tcp://localhost:5571"
 
 
 class KermitControlModule:
 
     def __init__(self):
+        # Control Client
         self.control = None
-        self.pub_addr = PUB_ADDR
-        self.linear = 0.0
-        self.angular = 0.0
-        self.mining = False
-        self.dumping = False
+    
+        # Real time requsting channel 
+        self.requesting = False
+        # Real time publish channel
+        self.publishing = False
 
+        # Messages
+        self.cmd_vel_data = None
+        self.command_data = None
+
+        # Params
         self.cmd_vel = None
+        self.cmd_vel_callback = None
+
         self.data = None
         self.data_callback = None
+
         self.command = None
 
-    def request(self, data):
-                
-        return
+    #  def request(self, data):
 
     def start_kermit(self):
-        self.control = ControlClient(False, (False, ""))
-        if self.data is not None:
-            self.control.subscribe(self.data)
-        else
-            print("Data not implimented")
+        # Start control module
+        self.control = ControlClient(self.publishing, (self.requesting, CMD_VEL))
+
+        # Start data subscriber if implimented
+        self.control.spin_subscriber(self.data) if self.data is not None else print("Data not implimented")
+
+        # Start publisher module if implimented
+        self.control.spin_publisher(self.cmd_vel) if self.cmd_vel is not None else print("Cmd vel not implimented")
         
+
+    # Stop kermit
     def quit_kermit(self):
         self.control.quit()
-        return 
+
+    # Initialize cmd_vel 
+
+    def __cmd_vel_get_data(self):
+        print("here")
+        ret = "serialized float from input"
+        return ret 
 
     def set_cmd_vel_get_data(self, func):
+        # Nothing to do with CC
+        self.cmd_vel_callback = func
+
+        # Create a new pub params
         self.cmd_vel = pub_params()
-        self.cmd_vel.address = "tcp://localhost5556"
-        self.cmd_vel.get_data = func
+        # The address to publish to 
+        self.cmd_vel.address = CMD_VEL
+        # The callback to get data
+        self.cmd_vel.get_data = self.__cmd_vel_get_data
+        # The topic
         self.cmd_vel.topic = "cmd_vel"
+        # The period to publish on
         self.cmd_vel.period = 1
+        # The start on creation
         self.cmd_vel.start_on_creation = True 
-        return
 
     # func gets two floats and returns void
-    def data_callback(self):
-        if self.data_callback is not None:
-            a = 5.6
-            b = 7.1
-            self.data_callback(a, b)
+    def __data_callback(self, incomming_message):
+        print("there")
+        # Get the data from the incomming packet
+        a = 5.6
+        b = 7.1
+        self.data_callback(a, b)
 
-    def __set_data_callback(self, func):
+    def set_data_callback(self, func):
+        # Nothing to do with CC
         self.data_callback = func
+
+        # Create a new sub params
         self.data = sub_params()
-        self.data.callback = self.data_callback
+        # Attach callback, takes in a string, needs a wrapper function
+        self.data.callback = self.__data_callback
+        # Attach the data topic
         self.data.topic = "data"
+        # Start on creation
         self.data.start_on_creation = True
-        return
-
-
