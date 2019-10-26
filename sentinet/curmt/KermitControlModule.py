@@ -5,6 +5,8 @@ from struct import pack
 
 cmd_vel = "cmd_vel"
 
+
+
 PUB_ADDR = "tcp://localhost:5555"
 SUB_ADDR = "tcp://localhost:5556"
 SERVE_ADDR = "tcp://localhost:5557"
@@ -21,50 +23,48 @@ class KermitControlModule:
         self.mining = False
         self.dumping = False
 
-        self.data_buffer = Data_Message()
-        self.ping_buffer = Ping_Message()
-        self.data_buffer.serialize_data(0, 4, FLOAT)
-        self.data_buffer.serialize_data(0, 4, FLOAT)
-        # TODO NEED TO IMPLIMENT MESSAGE BUFFER HERE
+        self.cmd_vel = None
+        self.data = None
+        self.data_callback = None
+        self.command = None
 
-    def get_data(self) -> bytes:
-        self.data_buffer.set_data(pack('f', self.angular), 4, FLOAT, self.data_buffer.header_size + 1)
-        self.data_buffer.set_data(pack('f', self.linear), 4, FLOAT, self.data_buffer.header_size + 8)
-        print("Sending: ")
-        print(self.data_buffer.message)
-        print(self.linear, self.angular)
-        return "temporary".encode('utf-8')
-
-    
+    def request(self, data):
+                
+        return
 
     def start_kermit(self):
         self.control = ControlClient(False, (False, ""))
-        self.control.publish(PUB_ADDR, cmd_vel, self.get_data, 1, True)
+        if self.data is not None:
+            self.control.subscribe(self.data)
+        else
+            print("Data not implimented")
         
-    def loop_kermit(self):
-        self.__update_state__()
-
     def quit_kermit(self):
         self.control.quit()
+        return 
 
-    def set_linear(self, value: float):
-        self.linear = value
+    def set_cmd_vel_get_data(self, func):
+        self.cmd_vel = pub_params()
+        self.cmd_vel.address = "tcp://localhost5556"
+        self.cmd_vel.get_data = func
+        self.cmd_vel.topic = "cmd_vel"
+        self.cmd_vel.period = 1
+        self.cmd_vel.start_on_creation = True 
+        return
 
-    def set_angular(self, value: float):
-        self.angular = value
+    # func gets two floats and returns void
+    def data_callback(self):
+        if self.data_callback is not None:
+            a = 5.6
+            b = 7.1
+            self.data_callback(a, b)
 
-    def zero_motors(self):
-        self.set_angular(0.0)
-        self.set_linear(0.0)
+    def __set_data_callback(self, func):
+        self.data_callback = func
+        self.data = sub_params()
+        self.data.callback = self.data_callback
+        self.data.topic = "data"
+        self.data.start_on_creation = True
+        return
 
-    def trigger_dumping(self):
-        self.dumping = not self.dumping
 
-    def trigger_mining(self):
-        self.mining = not self.mining
-
-    def set_dumping(self, value: bool):
-        self.dumping = value
-
-    def set_mining(self, value: bool):
-        self.mining = value
