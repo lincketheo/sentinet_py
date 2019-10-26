@@ -35,14 +35,13 @@ class DummyLocalizer(LocalizerBase):
 
 class DummySensor(SensorBase):
 	def __init__(self):
-		self.ControlModule = KermitControlModule()
-		self.ControlModule.set_data_callback(self.callback)
+		super().__init__()
 
-	def callback(self, cmd_vel):
+	def callback(self, throttle, turn_ratio):
 		Lock.acquire()
-		self.data = self.sensor_model(cmd_vel)
+		self.data = self.sensor_model(throttle, turn_ratio)
 		Lock.release()
 
-	def sensor_model(self, cmd_vel):
-		return cmd_vel
+	def sensor_model(self, throttle, turn_ratio):
+		return [throttle, turn_ratio]
 

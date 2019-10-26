@@ -1,5 +1,6 @@
 from multiprocessing import Pipe
 from abc import ABC, abstractmethod
+from sentinet.curmt import KermitControlModule
 import numpy as np
 
 
@@ -25,7 +26,7 @@ class LocalizerBase(ABC):
 
 class SensorBase(ABC):
 	def __init__(self):
-		self.ControlModule = None
+		self.ControlModule = KermitControlModule()
 
 	def get_data(self):
 		return self.data
