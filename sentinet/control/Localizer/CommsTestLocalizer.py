@@ -38,11 +38,11 @@ class DummySensor(SensorBase):
 		self.ControlModule = KermitControlModule()
 		self.ControlModule.set_data_callback(self.callback)
 
-	def callback(self, throttle, turn_ratio):
+	def callback(self, cmd_vel):
 		Lock.acquire()
-		self.data = self.sensor_model(throttle, turn_ratio)
+		self.data = self.sensor_model(cmd_vel)
 		Lock.release()
 
-	def sensor_model(self, throttle, turn_ratio):
-		return [throttle, turn_ratio]
+	def sensor_model(self, cmd_vel):
+		return cmd_vel
 
