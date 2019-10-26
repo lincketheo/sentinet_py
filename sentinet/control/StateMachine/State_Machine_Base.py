@@ -5,8 +5,8 @@ from sentinet.core.control.ControlClient import ControlClient
 
 class ActionStateBase(ABC):
 	def __init__(self,pipe): #initialize action state with comm pipe to state machinig
-		self.pipe=pipe
-		self.CC=ControlClient()
+		self.pipe = pipe
+		self.CC = ControlClient()
 		self.build_pub_sub()
 
 	@abstractmethod
@@ -46,11 +46,11 @@ class StateMachineBase(ABC):
 		#state_list contains list of state objects to be executed
 		#t_max is maximum run time in seconds
 		#init_state is an optional initial system state, if none will be set to first update state call
-		self.init_time=time()
-		self.t_max=t_max
+		self.init_time = time()
+		self.t_max = t_max
 		self.state_list=state_list
 		if init_state is not None:
-			self.state={alphabet[i]:init_state[i] for i in range(len(alphabet))}
+			self.state = {alphabet[i]:init_state[i] for i in range(len(alphabet))}
 		else:
 			self.state={alphabet[i]: None for i in range(len(alphabet))}
 
