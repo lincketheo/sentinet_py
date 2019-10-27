@@ -213,8 +213,6 @@ class Data_Message:
     #
     # @return The status of parse
     def parse_from_similar_message(self, message):
-        print(len(message))
-        print(self.header["BYTE_LENGTH"].data)
         if self.header["BYTE_LENGTH"].data != len(message):
             return False
         self.message = message

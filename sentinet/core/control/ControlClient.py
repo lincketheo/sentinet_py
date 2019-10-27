@@ -329,10 +329,14 @@ class ControlClient:
     def request_concurrent(self, address, message):
         if self.this_client == None:
             print("Error, no concurrent client")
+            return ""
         else:
+            print("Requesting:")
             self.this_client.connect(address)
-            self.this_client.send_string(message)
-            val = self.this_client.recv_string()
+            print("Waiting to send: ")
+            self.this_client.send(message)
+            print("Waiting to recieve: ")
+            val = self.this_client.recv()
             self.this_client.disconnect(address)
             return val
 
@@ -358,7 +362,8 @@ class ControlClient:
             print("%s does not exist" % (sock_addr))
 
     def spin_subscriber(self, sub: sub_params):
-        self.subscribe(sub.address, sub.topic, sub.callback, sub.start_on_creation)
+        self.subscribe(sub.address, sub.topic, sub.callback, start_on_creation = sub.start_on_creation)
+
     def subscribe(self, sock_addr, topic, callback, period = -1, start_on_creation = False):
         if sock_addr not in self.subscribers:
             self.subscribers[sock_addr] = SubscriberThreadSpace(context = self.context, \
