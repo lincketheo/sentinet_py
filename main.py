@@ -1,3 +1,5 @@
+#!/usr/bin/env python3 
+
 import sys
 from struct import pack
 from sentinet.core.messages.Message import *
@@ -19,6 +21,6 @@ if __name__ == '__main__':
 
     a.start_kermit()
 
-    time.sleep(5)
+    time.sleep(50)
 
     a.quit_kermit()
