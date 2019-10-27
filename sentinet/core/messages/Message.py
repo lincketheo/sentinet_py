@@ -18,7 +18,7 @@ class Data_Message:
         self.message = bytearray(self.header_size) 
         # Serialize header, if an error occurs here
         # it's not a runtime issue, its a versioning one
-        if not self.serialize_header():
+        if not self.__serialize_header():
             print("Exiting")
             sys.exit(1)
         # For faster retrivals of data, 
@@ -29,7 +29,7 @@ class Data_Message:
     # @brief Serializes data in self.header into header buffer
     #
     # @return Status
-    def serialize_header(self):
+    def __serialize_header(self):
         i = 0 
         # For every data element, serialize it into the header
         for element in self.header.values():
@@ -125,7 +125,6 @@ class Data_Message:
 
         # Index of data
         i = self.indices[index]
-        print(type(self.message[i:i+1]))
         # Size of data at index
         size = int.from_bytes(self.message[i:i+1], byteorder = ENDIAN)
 
@@ -223,6 +222,9 @@ class Data_Message:
             if self.message[self.indices[i] - 1] != 0:
                 return False
         return True
+
+    def to_wire(self):
+        self.__serialize_header()
         
 
 # A ping message is a lot easier to work with

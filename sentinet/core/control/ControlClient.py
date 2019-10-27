@@ -109,8 +109,8 @@ class PublisherThreadSpace(ThreadSpace):
     ##
     # @brief Publisher poll simply publishes using the get data callback and the topic as a prefix
     def poll(self):
-        body = str(self.callback())
-        self.socket.send_multipart([self.topic.encode('utf-8'), body.encode('utf-8')])
+        body = self.callback()
+        self.socket.send_multipart([self.topic.encode('utf-8'), body])
         time.sleep(self.period)
 
 
@@ -220,8 +220,7 @@ class SubscriberThreadSpace(ThreadSpace):
     def poll(self):
         socks = dict(self.poller.poll(POLLER_TIMEOUT))
         if self.socket in socks and socks[self.socket] == zmq.POLLIN:
-            message = self.socket.recv_string()
-            topic, body = message.split(":")
+            topic, body = self.socket.recv_multipart()
             self.callback(body)
         if self.period != -1:
             time.sleep(self.period)

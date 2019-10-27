@@ -1,25 +1,24 @@
+import sys
+from struct import pack
+from sentinet.core.messages.Message import *
 from sentinet.curmt import KermitControlModule
-from time import sleep
+import time
+import random
 
-def temporaryfunc(val1: float, val2: float):
-    print("doing stuff")
-    print(val1, val2)
 
-def temporaryfunc2():
-    print("Doing other stuff")
-    return 4.5, 6.7
+def example_get_data():
+    a = random.random()
+    b = random.random()
+    print(a, b)
+    return a, b
 
 if __name__ == '__main__':
     a = KermitControlModule()
-    a.set_cmd_vel_get_data(temporaryfunc2)
-    a.set_data_callback(temporaryfunc)
-   
+
+    a.set_cmd_vel_get_data(example_get_data)
+
     a.start_kermit()
 
-    sleep(4)
-
-    sleep(5)
-
-    sleep(4)
+    time.sleep(5)
 
     a.quit_kermit()

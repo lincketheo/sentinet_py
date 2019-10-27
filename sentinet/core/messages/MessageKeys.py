@@ -71,10 +71,10 @@ serialize_funcs = {
                     (lambda val : val.to_bytes(8, byteorder = ENDIAN, signed = False))),
 
         FLOAT :     ((lambda val, byte_length: byte_length == 4 and type(val) == float), 
-                    (lambda val : struct.pack("!f", val))),
+                    (lambda val : struct.pack("f", val))),
 
         DOUBLE :    ((lambda val, byte_length: byte_length == 8 and type(val) == float), 
-                    (lambda val : struct.pack("!d", val))),
+                    (lambda val : struct.pack("d", val))),
 
         STRING :    ((lambda val, byte_length: type(val) == str and len(val) + 1 == byte_length),
                     (lambda val : val.encode('utf-8') + b'\x00')),
