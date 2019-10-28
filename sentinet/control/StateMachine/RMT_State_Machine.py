@@ -45,7 +45,7 @@ class RMT_SM(StateMachineBase):
 			elif (self.state['x'] is not None 
 				and self.state['y'] is not None 
 				and self.state['th'] is not None 
-				and self.state['a'] is False 
+				and self.state['a'] is True 
 				and self.state['v'] is False 
 				and self.state['m'] is False 
 				and self.state['d'] is False 
@@ -55,14 +55,14 @@ class RMT_SM(StateMachineBase):
 		elif self.curr_state == 1: # Transition from mv2mine
 			if ((self.state['x'] < self.mining_zone[0][0] or self.state['x'] > self.mining_zone[0][1])
 				and (self.state['y'] < self.mining_zone[1][0] or self.state['y'] > self.mining_zone[1][1]) 
-				and self.state['a'] is False  
+				and self.state['a'] is True  
 				and self.state['m'] is False 
 				and self.state['d'] is False 
 				and self.state['f'] is False):
 				return 1
 			elif ((self.state['x'] > self.mining_zone[0][0] and self.state['x'] < self.mining_zone[0][1])
 				and (self.state['y'] > self.mining_zone[1][0] and self.state['y'] < self.mining_zone[1][1])
-				and self.state['a'] is False
+				and self.state['a'] is True
 				and self.state['m'] is False
 				and self.state['d'] is False
 				and self.state['f'] is False
@@ -73,7 +73,7 @@ class RMT_SM(StateMachineBase):
 		elif self.curr_state == 2: # Transition from mine
 			if ((self.state['x'] > self.mining_zone[0][0] and self.state['x'] < self.mining_zone[0][1])
 				and (self.state['y'] > self.mining_zone[1][0] and self.state['y'] < self.mining_zone[1][1])
-				and self.state['a'] is False
+				and self.state['a'] is True
 				and self.state['m'] is True
 				and self.state['d'] is False
 				and self.state['f'] is False
@@ -82,7 +82,7 @@ class RMT_SM(StateMachineBase):
 
 			elif ((self.state['x'] > self.mining_zone[0][0] and self.state['x'] < self.mining_zone[0][1])
 				and (self.state['y'] > self.mining_zone[1][0] and self.state['y'] < self.mining_zone[1][1])
-				and self.state['a'] is False
+				and self.state['a'] is True
 				and self.state['m'] is False
 				and self.state['d'] is False
 				and self.state['f'] is True
@@ -91,14 +91,14 @@ class RMT_SM(StateMachineBase):
 		elif self.curr_state == 3: # Transition from mv2dump
 			if ((self.state['x'] < self.dumping_zone[0][0] or self.state['x'] > self.dumping_zone[0][1])
 				and (self.state['y'] < self.dumping_zone[1][1] or self.state['y'] > self.dumping_zone[1][1])
-				and self.state['a'] is False
+				and self.state['a'] is True
 				and self.state['m'] is False
 				and self.state['d'] is False
 				and self.state['f'] is True):
 				return 3
 			elif ((self.state['x'] > self.dumping_zone[0][0] and self.state['x'] < self.dumping_zone[0][1])
 				and (self.state['y'] > self.dumping_zone[1][0] and self.state['y'] < self.dumping_zone[1][1])
-				and self.state['a'] is False
+				and self.state['a'] is True
 				and self.state['m'] is False
 				and self.state['d'] is False
 				and self.state['f'] is True
@@ -108,7 +108,7 @@ class RMT_SM(StateMachineBase):
 		elif self.curr_state == 4: # Transition from dump
 			if ((self.state['x'] > self.dumping_zone[0][0] and self.state['x'] < self.dumping_zone[0][1])
 				and (self.state['y'] > self.dumping_zone[1][0] and self.state['y'] < self.dumping_zone[1][1])
-				and self.state['a'] is False
+				and self.state['a'] is True
 				and self.state['m'] is False
 				and self.state['d'] is True
 				and self.state['f'] is True
@@ -116,7 +116,7 @@ class RMT_SM(StateMachineBase):
 				return 4
 			elif ((self.state['x'] > self.dumping_zone[0][0] and self.state['x'] < self.dumping_zone[0][1])
 				and (self.state['y'] > self.dumping_zone[1][0] and self.state['y'] < self.dumping_zone[1][1])
-				and self.state['a'] is False
+				and self.state['a'] is True
 				and self.state['m'] is False
 				and self.state['d'] is False
 				and self.state['f'] is False
@@ -309,7 +309,7 @@ class init_state(ActionStateBase): #initialization state
 
 	def execute(self):
 		self.cam_requester()
-		self.pipe_value({'cam_dep': True})
+		self.pipe_value({'a': True})
 		self.end_state()
 
 	def end_state(self):
