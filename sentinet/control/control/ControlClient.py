@@ -3,6 +3,7 @@ import time
 import threading
 
 POLLER_TIMEOUT = 10 # milliseconds
+REQUEST_RETRIES = 3
 
 # Default get_data callback
 def get_data_default():
@@ -338,12 +339,40 @@ class ControlClient:
     def request_concurrent(self, address, message):
         if self.this_client == None:
             print("Error, no concurrent client")
+            return "Error"
         else:
             self.this_client.connect(address)
-            self.this_client.send(message.encode('utf-8'))
-            val = self.this_client.recv_string()
-            self.this_client.disconnect(address)
-            return val
+            poll = zmq.Poller()
+            poll.register(client, zmq.POLLIN)
+            sequence = 0
+            retries_left = REQUEST_RETRIES
+            
+            self.this_client.send(message)
+
+            expect_reply = True
+            while expect_reply:
+                socks = dict(poll.poll(POLLER_TIMEOUT))
+                if socks.get(self.this_client) == zmq.POLLIN:
+                    reply = client.recv()
+                    if not reply:
+                        break
+                else:
+                    print("Warning no response from server, retrying .... ")
+                    self.this_client.setsockopt(zmq.LINGER, 0)
+                    self.this_client.close()
+                    poll.unregister(self.this_client)
+                    retries_left -= 1
+                    if retries_left == 0:
+                        print("ERROR Server is offline, aborting")
+                        break
+                    print("Reconnecting")
+                    self.this_client = self.context.socket(zmq.REQ)
+                    self.this_client.connect(address)
+                    poll.register(self.this_client, zmq.POLLIN)
+                    self.this_client.send(message.encode('utf-8'))
+        self.this_client = None
+        self.init_self_client(True)
+        return val
 
     def publish(pub: pub_params):
         self.publish(pub.address, pub.topic, pub.get_data, pub.period, pub.start_on_creation)

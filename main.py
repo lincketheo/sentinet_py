@@ -69,7 +69,7 @@ class ExampleControlExtension:
     The parameters are the head code and excess for a ping message
     as talked about in the meeting
     """
-    def request(self, head:int, code:int, excess:int):
+    def request(self, head:int, code = 0, excess = 0):
         return self.cc.request(head, code, excess)
 
     # CALLBACKS

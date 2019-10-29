@@ -1,0 +1,38 @@
+Pings take 3 numbers:
+  - type - 8 bits
+  - code - 16 bits
+  - excess - 64 bits
+
+
+Note that these will change - so 
+
+
+
+
+  Some common utility pings:
+
+request(1) # simple ack - responded sends an alive signal
+request(2) # echo - almost ack, reciever sends the exact same message
+request(3) # invalid request
+request(6) # time exceeded
+request(7) # please send a time stamp
+
+  Requesting a state change:
+request(8, x, y) - request a state change
+
+request(8, 1) - Stop everything
+
+request(8, 1 << 1, x) # Dump flag:
+request(8, 1 << 1, 1) # Entering dump state
+request(8, 1 << 1, 1 << 1) # Start dumping
+request(8, 1 << 1, 1 << 2 # Clean End dumping
+request(8, 1 << 1, 1 << 3) # abort dumping
+request(8, 1 << 1, 1 << 4) # exiting dump state
+
+
+request(8, 1 << 2, x) # Mine Flag:
+request(8, 1 << 2, 1) # Entering dump state
+request(8, 1 << 2, 1 << 1) # Start dumping
+request(8, 1 << 2, 1 << 2 # Clean End dumping
+request(8, 1 << 2, 1 << 3) # abort dumping
+request(8, 1 << 2, 1 << 4) # exiting dump state
