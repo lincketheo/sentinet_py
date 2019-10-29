@@ -13,8 +13,15 @@ class LocalizerBase(ABC):
 		self.ang_position = np.full((3,1),None)
 		self.ang_velocity = np.full((3,1),None)
 
+		for sensor in self.sensors.values():
+			sensor.start_sensor()
+
 	def pipe_value(self,value): #helper function to send value to state machine
 		self.pipe.send(value)
+
+	def end_localizer(self):
+		for sensor in self.sensors.values():
+			sensor.quit_sensor()
 
 	@abstractmethod
 	def filter(self):
@@ -26,8 +33,16 @@ class LocalizerBase(ABC):
 
 class SensorBase(ABC):
 	def __init__(self):
-		self.ControlModule = KermitControlModule()
+		pass
 
+	@abstractmethod
+	def start_sensor(self):
+		pass
+
+	@abstractmethod
+	def quit_sensor(self):
+		pass
+		
 	def get_data(self):
 		return self.data
 
