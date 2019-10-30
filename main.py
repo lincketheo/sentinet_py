@@ -92,7 +92,7 @@ if __name__ == '__main__':
     # Do work, or loop or whatever
     # This updates the robot and sends 
     # lin and ang
-    for i in range(5):
+    while(True):
         a.lin = random.random()
         a.ang = random.random()
         time.sleep(1)
@@ -105,10 +105,5 @@ if __name__ == '__main__':
     print(f"Responded with {ret}")
     ret = a.request(5, 9, 0)
     print(f"Responded with {ret}")
-    
-    for i in range(5):
-        a.lin = random.random()
-        a.ang = random.random()
-        time.sleep(1)
 
     a.stop()
