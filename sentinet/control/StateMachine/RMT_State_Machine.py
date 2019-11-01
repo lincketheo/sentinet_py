@@ -22,11 +22,11 @@ class RMT_SM(StateMachineBase):
 	
 	def init_system(self): #start in initial state
 		self.curr_state=0
-		self.execute_state(state_list[0])
+		self.execute_state(self.state_list[0])
 		self.run_SM()
 	
 	#Defines what is legal for state transfer between states to make sure
-	def transistion_law(self): #transition law defined in RMT SM Definition, see Drive
+	def transition_law(self): #transition law defined in RMT SM Definition, see Drive
 		run_time=time()-self.init_time
 		# Soft Exit Conditions
 		if self.state['s'] == 0:
@@ -138,8 +138,8 @@ class RMT_SM(StateMachineBase):
 			if pipe_check is not None:
 				keys=pipe_check.keys()
 				if 'fin' in keys:
-					self.localizer.end_localizer()
-					raise SystemExit
+					self.end_localizer()
+					exit()
 				else:
 					for key in keys:
 						self.state[key]=pipe_check[key]
@@ -180,6 +180,7 @@ class mv2mine(ActionStateBase): #move to mining position action state
 
 	def end_state(self): # ends the mining process
 		self.ControlModule.quit_kermit()
+		exit()
 
 	def select_target_zone(self): #select target pos from zone as np array, zone boundaries hard coded from reqs
 		return [self.mining_zone[0][0], self.mining_zone[1][1]]
@@ -188,7 +189,7 @@ class mv2mine(ActionStateBase): #move to mining position action state
 		self.path,self.dpath = Bez_Cur([self.state['x'], self.state['y']], self.target, ATTRACTOR)
 
 	def run_PD(self): #while loop run of PD controller
-		self.pipe_value(dict(moving=True))
+		self.pipe_value({'v':True})
 		self.np_pos = np.array([self.state['x'], self.state['y']])
 		self.vel = np.array([0,0])
 		self.pos_diff_norm = np.linalg.norm(self.np_pos - self.target)
@@ -201,7 +202,7 @@ class mv2mine(ActionStateBase): #move to mining position action state
 			self.pos_diff_norm = np.linalg.norm(self.np_pos-self.target)
 		self.set_data([0,0])
 		sleep(0.05)
-		self.pipe_value(dict(moving=False))
+		self.pipe_value({'v':False})
 
 class mine(ActionStateBase): #mining action state
 	def __init__(self,pipe):
@@ -215,13 +216,14 @@ class mine(ActionStateBase): #mining action state
 		self.ControlModule.request(8,1<<2,1<<1)
 
 	def execute(self):
-		self.pipe_value({'mining': True})
+		self.pipe_value({'m': True})
 		self.mine_requester()
-		self.pipe_value({'mining': False})
+		self.pipe_value({'m': False})
 		self.end_state()
 
 	def end_state(self):
 		self.ControlModule.quit_kermit()
+		exit()
 
 
 class mv2dump(ActionStateBase): #moving to dumping zone mining state
@@ -237,6 +239,7 @@ class mv2dump(ActionStateBase): #moving to dumping zone mining state
 
 	def end_state(self):
 		self.ControlModule.quit_kermit()
+		exit()
 	
 	def init_control_module(self): #add dynamic mapping reciever here
 		self.ControlModule = KermitControlModule(publishing=True)
@@ -255,13 +258,13 @@ class mv2dump(ActionStateBase): #moving to dumping zone mining state
 		pass
 
 	def select_target_zone(self): #hard coded return point based on reqs
-		pass
+		return [self.dumping_zone[0][0],self.dumping_zone[1][1]]
 
 	def determine_path(self): #Bezier curve path generator
 		self.path,self.dpath = Bez_Cur([self.state['x'], self.state['y']], self.target, ATTRACTOR)
 
 	def run_PD(self): #while loop for PD controller
-		self.pipe_value(dict(moving=True))
+		self.pipe_value({'v':True})
 		self.np_pos = np.array([self.state['x'], self.state['y']])
 		self.vel = np.array([0,0])
 		self.pos_diff_norm = np.linalg.norm(self.np_pos - self.target)
@@ -274,7 +277,7 @@ class mv2dump(ActionStateBase): #moving to dumping zone mining state
 			self.pos_diff_norm=np.linalg.norm(self.np_pos - self.target)
 		self.set_data([0,0])
 		sleep(0.05)
-		self.pipe_value(dict(moving=False))
+		self.pipe_value({'v':False})
 
 class dump(ActionStateBase): #Class for the to dump state.
 	def __init__(self,pipe):
@@ -288,14 +291,14 @@ class dump(ActionStateBase): #Class for the to dump state.
 		self.ControlModule.request(8,1<<1,1<<1)
 
 	def execute(self):
-		self.pipe_value({'dumping': True})
+		self.pipe_value({'d': True})
 		self.dump_requester()
-		self.pipe_value({'dumping': False})
+		self.pipe_value({'d': False})
 		self.end_state()
 
 	def end_state(self):
 		self.ControlModule.quit_kermit()
-
+		exit()
 
 class init_state(ActionStateBase): #initialization state
 	def __init__(self,pipe): #initializes the initializer
@@ -306,7 +309,7 @@ class init_state(ActionStateBase): #initialization state
 		self.ControlModule.start_kermit()
 
 	def cam_requester(self):
-		self.ControlModule.request(1,1,1)
+		self.ControlModule.request(1)
 
 	def execute(self):
 		self.cam_requester()
@@ -315,31 +318,30 @@ class init_state(ActionStateBase): #initialization state
 
 	def end_state(self):
 		self.ControlModule.quit_kermit()
-
-
+		exit()
 
 class soft_exit(ActionStateBase): #planned soft exit state
 	def __init__(self,pipe): #initializes the soft exit state
 		super().__init__(pipe)
 
 	def end_mine_requester(self):
-		self.ControlModule.request(1,1,1)
+		self.ControlModule.request(8,1<<2,1<<2)
 
 	def dump_requester(self):
-		self.ControlModule.request(1,1,1)
+		self.ControlModule.request(8,1<<1,1<<1)
 
 	def kill_requester(self):
-		self.ControlModule.request(1,1,1)
+		self.ControlModule.request(8,1)
 
 	def execute(self):
 		sleep(0.05)
-		self.pipe_value({'moving': False})
+		self.pipe_value({'v': False})
 		self.end_mine_requester()
-		self.pipe_value({'mining': False, 'dumping': True})
+		self.pipe_value({'m': False, 'd': True})
 		self.dump_requester()
-		self.pipe_value({'dumping': False, 'full': False})
+		self.pipe_value({'d': False, 'f': False})
 		self.kill_requester()
-		self.pipe_value(dict(fin=True))
+		self.pipe_value({'fin': True})
 		self.end_state()
 
 	def cmd_vel_callback(self):
@@ -352,8 +354,7 @@ class soft_exit(ActionStateBase): #planned soft exit state
 
 	def end_state(self):
 		self.ControlModule.quit_kermit()
-
-
+		exit()
 
 def Bez_Cur(Start,End,Attractor,weight):
 	#Start End and Attractor must be x,y pairs, weight [-1,1]
@@ -412,3 +413,5 @@ def GLPDC(path,pHeadings,position,velocity,backwards):
 		turn_ratio=h_dev/np.pi*(-1)**backwards
 
 	return [throttle, turn_ratio]
+
+

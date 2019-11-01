@@ -24,6 +24,16 @@ class LocalizerBase(ABC):
 		for sensor in self.sensors.values():
 			sensor.quit_sensor()
 
+	def read_pipe(self): #helper function to read pipe in a non-blocking way
+		if self.pipe.poll():
+			return self.pipe.recv()
+		else:
+			return None
+
+	@abstractmethod
+	def run_localizer(self):
+		pass
+
 	@abstractmethod
 	def filter(self):
 		pass

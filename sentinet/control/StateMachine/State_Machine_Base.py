@@ -81,6 +81,8 @@ class StateMachineBase(ABC):
 		machine_conn, loc_conn = Pipe()
 		self.loc_pipe = machine_conn
 		s=Process(target=localizer, args=(loc_conn, sensors))
+		s.start()
+		print(s.is_alive())
 
 	def read_pipe(self): #helper function to read pipe in a non-blocking way
 		if self.pipe.poll():
@@ -93,6 +95,9 @@ class StateMachineBase(ABC):
 			return self.loc_pipe.recv()
 		else:
 			return None
+
+	def end_localizer(self):
+		self.loc_pipe.send('fin')
 
 	def pipe_state(self): #send system state to action state
 		self.pipe.send(self.state)
