@@ -182,7 +182,7 @@ class mv2mine(ActionStateBase): #move to mining position action state
 		self.ControlModule.quit_kermit()
 
 	def select_target_zone(self): #select target pos from zone as np array, zone boundaries hard coded from reqs
-		pass
+		return [self.mining_zone[0][0], self.mining_zone[1][1]]
 
 	def determine_path(self): #Bezier Curve Path Generator
 		self.path,self.dpath = Bez_Cur([self.state['x'], self.state['y']], self.target, ATTRACTOR)
