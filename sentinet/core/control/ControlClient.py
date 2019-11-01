@@ -2,7 +2,7 @@ import zmq
 import time
 import threading
 
-POLLER_TIMEOUT = 2500 # milliseconds
+POLLER_TIMEOUT = -1 # milliseconds
 REQUEST_RETRIES = 3
 
 # Default get_data callback
