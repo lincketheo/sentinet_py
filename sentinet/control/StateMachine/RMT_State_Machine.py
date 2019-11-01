@@ -14,8 +14,8 @@ CHECKSUM="CHECKSUM"
 #		verify requester flags
 #		dynamic mapping in movement states
 class RMT_SM(StateMachineBase):
-	#mining_zone=[[x_lower,x_upper],[y_lower,y_upper]]
-	#dumping_zone=[[x_lower,x_upper],[y_lower,y_upper]]
+	mining_zone=[[10.0,10.0],[10.0,10.0]]
+	dumping_zone=[[15.5,15.5],[-10.0,-10.0]]
 	def __init__(self, alphabet, state_list, t_max, localizer, sensors, init_state=None):
 		super().__init__(alphabet, state_list, t_max, localizer, sensors, init_state=init_state)
 		self.init_system()
@@ -212,7 +212,7 @@ class mine(ActionStateBase): #mining action state
 		self.ControlModule.start_kermit()
 
 	def mine_requester(self):
-		self.ControlModule.request(1,1,1)
+		self.ControlModule.request(8,1<<2,1<<1)
 
 	def execute(self):
 		self.pipe_value({'mining': True})
@@ -285,7 +285,7 @@ class dump(ActionStateBase): #Class for the to dump state.
 		self.ControlModule.start_kermit()
 
 	def dump_requester(self):
-		self.ControlModule.request(1,1,1)
+		self.ControlModule.request(8,1<<1,1<<1)
 
 	def execute(self):
 		self.pipe_value({'dumping': True})
