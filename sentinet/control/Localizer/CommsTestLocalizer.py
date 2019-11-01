@@ -51,7 +51,7 @@ class DummySensor(SensorBase):
 		self.ControlModule.set_data_callback(self.callback)
 
 	def start_sensor(self):
-		self.ControlModule.start_kermit().
+		self.ControlModule.start_kermit()
 	def quit_sensor(self):
 		self.ControlModule.quit_kermit()
 	# @brief Assignes content and information for the sensor storing the sensors infromation in itself. Protecting information by locking it
