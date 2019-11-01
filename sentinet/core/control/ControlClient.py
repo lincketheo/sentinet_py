@@ -2,7 +2,8 @@ import zmq
 import time
 import threading
 
-POLLER_TIMEOUT = 10 # milliseconds
+POLLER_TIMEOUT = 2500 # milliseconds
+REQUEST_RETRIES = 3
 
 # Default get_data callback
 def get_data_default():
@@ -339,14 +340,57 @@ class ControlClient:
             print("Error, no concurrent client")
             return ""
         else:
-            print("Requesting:")
-            self.this_client.connect(address)
-            print("Waiting to send: ")
-            self.this_client.send(message)
-            print("Waiting to recieve: ")
-            val = self.this_client.recv()
-            self.this_client.disconnect(address)
-            return val
+            client = self.context.socket(zmq.REQ)
+            client.connect(address)
+
+            poll = zmq.Poller()
+            poll.register(client, zmq.POLLIN)
+
+            sequence = 0 
+            retries_left = REQUEST_RETRIES
+            while retries_left:
+
+                # Our request in byte form
+                if(type(message) == str):
+                    request = message.encode('utf-8')
+                else:
+                    request = message
+
+                # Attempt to send request
+                client.send(request)
+
+                # Wait until we dont expect a reply
+                expect_reply = True
+                print(address)
+                while expect_reply:
+                    # Poll the sockets
+                    socks = dict(poll.poll(POLLER_TIMEOUT))
+                    if socks.get(client) == zmq.POLLIN:
+                        reply = client.recv()
+                        if not reply:
+                            break
+                        retries_left = REQUEST_RETRIES
+                        expect_reply = False
+                        return reply
+                    else:
+                        print("W: No response from server, retrying...")
+                        # Socket is confused. Close and remove it.
+                        client.setsockopt(zmq.LINGER, 0)
+                        client.close()
+                        poll.unregister(client)
+                        retries_left -= 1
+                        if retries_left == 0:
+                            print("E: Server seems to be offline, abandoning")
+                            break
+                        print("I: Reconnecting and resending (%s)" % request)
+                        # Create new connection
+                        client = self.context.socket(zmq.REQ)
+                        client.connect(address)
+                        poll.register(client, zmq.POLLIN)
+                        client.send(request)
+            return "Error"
+
+
     ##
     # @brief initiates publication request
     #

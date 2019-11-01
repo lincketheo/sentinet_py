@@ -37,7 +37,9 @@ class DummyLocalizer(LocalizerBase):
 				self.ang_velocity = np.array([np.pi*turn_ratio*turn_gain, 0, 0])
 				self.position += np.array([self.velocity[0]*time_step, self.velocity[1]*time_step, self.velocity[2]*time_step])
 				self.ang_position += np.array([self.ang_velocity[0]*time_step, self.ang_velocity[1]*time_step, self.ang_velocity[2]*time_step])
-		self.pipe_value(np.array([self.position, self.ang_position]))
+
+		self.pipe_value([self.position, self.ang_position])
+	
 	def dynamics_model(self):
 		return 0
 
@@ -45,14 +47,18 @@ class DummyLocalizer(LocalizerBase):
 class DummySensor(SensorBase):
 	# @brief Just initializes the content inside in the class.
 	def __init__(self):
-		super().__init__()
+		self.ControlModule = KermitControlModule(requesting=True)
+		self.ControlModule.set_data_callback(self.callback)
 
-	# @brief Assignes content and information for the sensor storing the sensors infromation in itself. Protecting information by locking it.
-	def callback(self, throttle, turn_ratio):
+	def start_sensor(self):
+		self.ControlModule.start_kermit().
+	def quit_sensor(self):
+		self.ControlModule.quit_kermit()
+	# @brief Assignes content and information for the sensor storing the sensors infromation in itself. Protecting information by locking it
+	def callback(self, throttle: float, turn_ratio: float):
 		Lock.acquire()
 		self.data = self.sensor_model(throttle, turn_ratio)
 		Lock.release()
 	# @brief Returns the infromation inside the sensor.
 	def sensor_model(self, throttle, turn_ratio):
 		return [throttle, turn_ratio]
-

@@ -1,8 +1,8 @@
 from sentinet.control.StateMachine.State_Machine_Base import StateMachineBase, ActionStateBase
-from sentinet.core.control.ControlClient import ControlClient, pub_params, sub_params, serve_params, req_params
+from sentinet.control.Localizer import CommsTestLocalizer
+from sentinet.curmt.KermitControlModule import KermitControlModule
 import numpy as np
 import math
-from sentinet.core.control import ControlClient
 from multiprocessing import Process, Pipe
 from time import time, sleep
 
@@ -11,13 +11,13 @@ ATTRACTOR=[0,0]
 PATH_TOL=0.05 #meters
 CHECKSUM="CHECKSUM"
 # todo: better transition law
-#		action states: getter, callback, requester
-# BIGG KERMIT DATA BRAIN!!!!!!!!!!
+#		verify requester flags
+#		dynamic mapping in movement states
 class RMT_SM(StateMachineBase):
 	#mining_zone=[[x_lower,x_upper],[y_lower,y_upper]]
 	#dumping_zone=[[x_lower,x_upper],[y_lower,y_upper]]
-	def __init__(self,alphabet,state_list,t_max,init_state=None):
-		super().__init__(alphabet,state_list,t_max,init_state=init_state)
+	def __init__(self, alphabet, state_list, t_max, localizer, sensors, init_state=None):
+		super().__init__(alphabet, state_list, t_max, localizer, sensors, init_state=init_state)
 		self.init_system()
 	
 	def init_system(self): #start in initial state
@@ -46,7 +46,7 @@ class RMT_SM(StateMachineBase):
 			elif (self.state['x'] is not None 
 				and self.state['y'] is not None 
 				and self.state['th'] is not None 
-				and self.state['a'] is False 
+				and self.state['a'] is True 
 				and self.state['v'] is False 
 				and self.state['m'] is False 
 				and self.state['d'] is False 
@@ -56,14 +56,14 @@ class RMT_SM(StateMachineBase):
 		elif self.curr_state == 1: # Transition from mv2mine
 			if ((self.state['x'] < self.mining_zone[0][0] or self.state['x'] > self.mining_zone[0][1])
 				and (self.state['y'] < self.mining_zone[1][0] or self.state['y'] > self.mining_zone[1][1]) 
-				and self.state['a'] is False  
+				and self.state['a'] is True  
 				and self.state['m'] is False 
 				and self.state['d'] is False 
 				and self.state['f'] is False):
 				return 1
 			elif ((self.state['x'] > self.mining_zone[0][0] and self.state['x'] < self.mining_zone[0][1])
 				and (self.state['y'] > self.mining_zone[1][0] and self.state['y'] < self.mining_zone[1][1])
-				and self.state['a'] is False
+				and self.state['a'] is True
 				and self.state['m'] is False
 				and self.state['d'] is False
 				and self.state['f'] is False
@@ -74,7 +74,7 @@ class RMT_SM(StateMachineBase):
 		elif self.curr_state == 2: # Transition from mine
 			if ((self.state['x'] > self.mining_zone[0][0] and self.state['x'] < self.mining_zone[0][1])
 				and (self.state['y'] > self.mining_zone[1][0] and self.state['y'] < self.mining_zone[1][1])
-				and self.state['a'] is False
+				and self.state['a'] is True
 				and self.state['m'] is True
 				and self.state['d'] is False
 				and self.state['f'] is False
@@ -83,7 +83,7 @@ class RMT_SM(StateMachineBase):
 
 			elif ((self.state['x'] > self.mining_zone[0][0] and self.state['x'] < self.mining_zone[0][1])
 				and (self.state['y'] > self.mining_zone[1][0] and self.state['y'] < self.mining_zone[1][1])
-				and self.state['a'] is False
+				and self.state['a'] is True
 				and self.state['m'] is False
 				and self.state['d'] is False
 				and self.state['f'] is True
@@ -92,14 +92,14 @@ class RMT_SM(StateMachineBase):
 		elif self.curr_state == 3: # Transition from mv2dump
 			if ((self.state['x'] < self.dumping_zone[0][0] or self.state['x'] > self.dumping_zone[0][1])
 				and (self.state['y'] < self.dumping_zone[1][1] or self.state['y'] > self.dumping_zone[1][1])
-				and self.state['a'] is False
+				and self.state['a'] is True
 				and self.state['m'] is False
 				and self.state['d'] is False
 				and self.state['f'] is True):
 				return 3
 			elif ((self.state['x'] > self.dumping_zone[0][0] and self.state['x'] < self.dumping_zone[0][1])
 				and (self.state['y'] > self.dumping_zone[1][0] and self.state['y'] < self.dumping_zone[1][1])
-				and self.state['a'] is False
+				and self.state['a'] is True
 				and self.state['m'] is False
 				and self.state['d'] is False
 				and self.state['f'] is True
@@ -109,7 +109,7 @@ class RMT_SM(StateMachineBase):
 		elif self.curr_state == 4: # Transition from dump
 			if ((self.state['x'] > self.dumping_zone[0][0] and self.state['x'] < self.dumping_zone[0][1])
 				and (self.state['y'] > self.dumping_zone[1][0] and self.state['y'] < self.dumping_zone[1][1])
-				and self.state['a'] is False
+				and self.state['a'] is True
 				and self.state['m'] is False
 				and self.state['d'] is True
 				and self.state['f'] is True
@@ -117,7 +117,7 @@ class RMT_SM(StateMachineBase):
 				return 4
 			elif ((self.state['x'] > self.dumping_zone[0][0] and self.state['x'] < self.dumping_zone[0][1])
 				and (self.state['y'] > self.dumping_zone[1][0] and self.state['y'] < self.dumping_zone[1][1])
-				and self.state['a'] is False
+				and self.state['a'] is True
 				and self.state['m'] is False
 				and self.state['d'] is False
 				and self.state['f'] is False
@@ -125,13 +125,11 @@ class RMT_SM(StateMachineBase):
 				return 1
 
 	def update_system_state(self): #update sys_state from localizer
-		pos=self.localizer_callback()
-		self.state['x']=pos[0]
-		self.state['y']=pos[1]
-		self.state['th']=pos[2]
-
-	def localizer_callback(self): #callback to localizer
-		return 0
+		pos=self.read_loc_pipe()
+		if pos is not None:
+			self.state['x']=pos[0][0]
+			self.state['y']=pos[0][1]
+			self.state['th']=pos[1][0]
 
 	def run_SM(self): #master run loop
 		while True:
@@ -140,6 +138,7 @@ class RMT_SM(StateMachineBase):
 			if pipe_check is not None:
 				keys=pipe_check.keys()
 				if 'fin' in keys:
+					self.localizer.end_localizer()
 					raise SystemExit
 				else:
 					for key in keys:
@@ -153,43 +152,53 @@ class RMT_SM(StateMachineBase):
 				self.pipe_state()
 
 class mv2mine(ActionStateBase): #move to mining position action state
-	def __init__(self,pipe): #starts using the init function to a pipe listed to it super class
+	def __init__(self, pipe): #starts using the init function to a pipe listed to it super class
 		super().__init__(pipe)
+		#self.get_map()
 
-	def execute(self): #starts the mining process
-		self.target=self.select_target_zone()
-		self.path=self.determine_path()
+	def init_control_module(self): #add dynamic mapping reciever here
+		self.ControlModule = KermitControlModule(publishing=True)
+		self.ControlModule.set_cmd_vel_get_data(self.cmd_vel_callback)
+		self.ControlModule.set_data_callback(self.mapping_callback)
+		self.ControlModule.start_kermit()
+
+	def cmd_vel_callback(self):
+		cmd_vel = self.get_data()
+		return cmd_vel[0], cmd_vel[1]
+
+	def get_map(self):
+		pass
+
+	def mapping_callback(self, message_string):
+		pass
+
+	def execute(self): # executes minning operations
+		self.target = self.select_target_zone()
+		self.path = self.determine_path()
 		self.run_PD()
 		self.end_state()
 
-	def build_pub_sub(self): #Establishes publisher and subscriber
-		self.pub_params=pub_params()
-		self.pub_params.get_data=self.serialize_data
-		self.pub_params.topic="cmd_vel"
-		self.pub_params.period=10
-		self.CC.spin(self.pub_params)
-
-	def serialize_data(self): #TODO
-		return 0
+	def end_state(self): # ends the mining process
+		self.ControlModule.quit_kermit()
 
 	def select_target_zone(self): #select target pos from zone as np array, zone boundaries hard coded from reqs
-		return 0
+		pass
 
 	def determine_path(self): #Bezier Curve Path Generator
-		self.state=self.get_state()
-		self.path,self.dpath=Bez_Cur([self.state['x'],self.state['y']],self.target,ATTRACTOR)
+		self.path,self.dpath = Bez_Cur([self.state['x'], self.state['y']], self.target, ATTRACTOR)
 
 	def run_PD(self): #while loop run of PD controller
 		self.pipe_value(dict(moving=True))
-		self.np_pos=np.array([self.state['x'],self.state['y']])
-		self.vel=np.array([0,0])
-		self.pos_diff_norm=np.linalg.norm(self.np_pos-self.target)
-		while self.pos_diff_norm>PATH_TOL:
-			self.set_data(GLPDC(self.path,self.dpath,self.np_pos,self.vel,0))
-			self.state=self.get_state()
-			self.vel=np.array([[self.state['x'],self.state['y']]])-self.np_pos
-			self.np_pos=np.array([self.state['x'],self.state['y']])
-			self.pos_diff_norm=np.linalg.norm(self.np_pos-self.target)
+		self.np_pos = np.array([self.state['x'], self.state['y']])
+		self.vel = np.array([0,0])
+		self.pos_diff_norm = np.linalg.norm(self.np_pos - self.target)
+		while self.pos_diff_norm > PATH_TOL:
+			self.set_data(GLPDC(self.path, self.dpath, self.np_pos, self.vel, 0))
+			if self.get_state() is not None:
+				self.state = self.get_state()
+			self.vel = np.array([[self.state['x'],self.state['y']]])-self.np_pos
+			self.np_pos = np.array([self.state['x'],self.state['y']])
+			self.pos_diff_norm = np.linalg.norm(self.np_pos-self.target)
 		self.set_data([0,0])
 		sleep(0.05)
 		self.pipe_value(dict(moving=False))
@@ -197,68 +206,72 @@ class mv2mine(ActionStateBase): #move to mining position action state
 class mine(ActionStateBase): #mining action state
 	def __init__(self,pipe):
 		super().__init__(pipe)
-		self.done=False
 
-	def callback(self,string): #TODO
-		if string == 'done'+CHECKSUM:
-			self.pipe_value(dict(mining=False,full=True))
-			self.done=True
-		return string+CHECKSUM
+	def init_control_module(self):
+		self.ControlModule = KermitControlModule(requesting=True)
+		self.ControlModule.start_kermit()
 
-	def build_pub_sub(self): #TODO
-		self.CC.serve(self.callback)
+	def mine_requester(self):
+		self.ControlModule.request(1,1,1)
 
 	def execute(self):
-		self.mine_flag_handler()
-
-	def serialize_data(self): #TODO
-		return 0
-
-	def mine_flag_handler(self): #wait for finished flag from low level
-		self.pipe_value(dict(mining=True))
-		self.CC.request("tcp://localhost:5555","start_mining")
-		while not self.done:
-			sleep(0.05)
+		self.pipe_value({'mining': True})
+		self.mine_requester()
+		self.pipe_value({'mining': False})
 		self.end_state()
+
+	def end_state(self):
+		self.ControlModule.quit_kermit()
+
 
 class mv2dump(ActionStateBase): #moving to dumping zone mining state
 	def __init__(self,pipe):
 		super().__init__(pipe)
+		#self.get_map()
 
-	def execute(self): #starts the dumpint action
-		self.target=self.select_target_zone()
-		self.path=self.determine_path()
+	def execute(self):
+		self.target = self.select_target_zone()
+		self.path = self.determine_path()
 		self.run_PD()
 		self.end_state()
 
-	def build_pub_sub(self): #develops the publisher and subber for what is happening inside the function
-		self.pub_params=pub_params()
-		self.pub_params.get_data=self.serialize_data
-		self.pub_params.topic="cmd_vel"
-		self.pub_params.period=10
-		self.CC.spin(self.pub_params)
+	def end_state(self):
+		self.ControlModule.quit_kermit()
+	
+	def init_control_module(self): #add dynamic mapping reciever here
+		self.ControlModule = KermitControlModule(publishing=True)
+		self.ControlModule.set_cmd_vel_get_data(self.cmd_vel_callback)
+		self.ControlModule.set_data_callback(self.mapping_callback)
+		self.ControlModule.start_kermit()
 
-	def serialize_data(self): #TODO
-		return 0
+	def cmd_vel_callback(self):
+		cmd_vel = self.get_data()
+		return cmd_vel[0], cmd_vel[1]
+
+	def get_map(self):
+		pass
+
+	def mapping_callback(self, message_string):
+		pass
 
 	def select_target_zone(self): #hard coded return point based on reqs
-		return 0
+		pass
 
 	def determine_path(self): #Bezier curve path generator
-		self.state=self.get_state()
-		self.path,self.dpath=Bez_Cur([self.state['x'],self.state['y']],self.target,ATTRACTOR)
+		self.path,self.dpath = Bez_Cur([self.state['x'], self.state['y']], self.target, ATTRACTOR)
 
 	def run_PD(self): #while loop for PD controller
 		self.pipe_value(dict(moving=True))
-		self.np_pos=np.array([self.state['x'],self.state['y']])
-		self.vel=np.array([0,0])
-		self.pos_diff_norm=np.linalg.norm(self.np_pos-self.target)
-		while self.pos_diff_norm>PATH_TOL:
-			self.set_data(GLPDC(self.path,self.dpath,self.np_pos,self.vel,1))
-			self.state=self.get_state()
-			self.vel=np.array([[self.state['x'],self.state['y']]])-self.np_pos
-			self.np_pos=np.array([self.state['x'],self.state['y']])
-			self.pos_diff_norm=np.linalg.norm(self.np_pos-self.target)
+		self.np_pos = np.array([self.state['x'], self.state['y']])
+		self.vel = np.array([0,0])
+		self.pos_diff_norm = np.linalg.norm(self.np_pos - self.target)
+		while self.pos_diff_norm > PATH_TOL:
+			self.set_data(GLPDC(self.path, self.dpath, self.np_pos, self.vel, 1))
+			if self.get_state() is not None:
+				self.state = self.get_state()
+			self.vel = np.array([[self.state['x'], self.state['y']]]) - self.np_pos
+			self.np_pos=np.array([self.state['x'], self.state['y']])
+			self.pos_diff_norm=np.linalg.norm(self.np_pos - self.target)
 		self.set_data([0,0])
 		sleep(0.05)
 		self.pipe_value(dict(moving=False))
@@ -266,92 +279,81 @@ class mv2dump(ActionStateBase): #moving to dumping zone mining state
 class dump(ActionStateBase): #Class for the to dump state.
 	def __init__(self,pipe):
 		super().__init__(pipe)
-		self.done=False
 
-	def callback(self,string): #TODO
-		if string == 'done'+CHECKSUM:
-			self.pipe_value(dict(dumping=False,full=False))
-			self.done=True
-		return string+CHECKSUM
+	def init_control_module(self):
+		self.ControlModule = KermitControlModule(requesting=True)
+		self.ControlModule.start_kermit()
 
-	def build_pub_sub(self): #TODO
-		self.CC.serve(self.callback)
+	def dump_requester(self):
+		self.ControlModule.request(1,1,1)
 
 	def execute(self):
-		self.dump_flag_handler()
-
-	def serialize_data(self): #TODO
-		return 0
-
-	def dump_flag_handler(self): #wait for finished flag from low level
-		self.pipe_value(dict(dumping=True))
-		self.CC.request("tcp://localhost:5555","start_dumping")
-		while not self.done:
-			sleep(0.05)
+		self.pipe_value({'dumping': True})
+		self.dump_requester()
+		self.pipe_value({'dumping': False})
 		self.end_state()
+
+	def end_state(self):
+		self.ControlModule.quit_kermit()
+
 
 class init_state(ActionStateBase): #initialization state
 	def __init__(self,pipe): #initializes the initializer
 		super().__init__(pipe)
-		self.stowed=True
+	
+	def init_control_module(self):
+		self.ControlModule = KermitControlModule(requesting=True)
+		self.ControlModule.start_kermit()
 
-	def execute(self): #starts and defines its state as initialize
-		self.dep_auger()
-		self.state=self.get_state()
-		self.find_self()
+	def cam_requester(self):
+		self.ControlModule.request(1,1,1)
+
+	def execute(self):
+		self.cam_requester()
+		self.pipe_value({'a': True})
 		self.end_state()
 
-	def callback(self): #returns and sets for stowed and start
-		if string == 'done'+CHECKSUM:
-			self.pipe_value(dict(stowed=false))
-			self.stowed=False
-		return string+CHECKSUM
+	def end_state(self):
+		self.ControlModule.quit_kermit()
 
-	def build_pub_sub(self): #publishes and subbs its content relevant for execution
-		self.CC.serve(self.callback)
 
-	def serialize_data(self): #TODO
-		return 0
-
-	def dep_auger(self): #send auger deployment command to low level
-		self.CC.request("tcp://localhost:5555","deploy_auger")
-		while self.stowed:
-			sleep(0.05)		
-	
-	def scan_camera(): # TODO spin camera 360
-		return 0
-
-	def find_self(self): # if position is unknown scan camera
-		while self.state is None:
-			self.state=self.get_state()
-		if self.state['x'] is None:
-			self.scan_camera()
 
 class soft_exit(ActionStateBase): #planned soft exit state
 	def __init__(self,pipe): #initializes the soft exit state
 		super().__init__(pipe)
-		self.done=False
 
-	def execute(self): #defines itself as completed and finished
-		self.exit_handler()
+	def end_mine_requester(self):
+		self.ControlModule.request(1,1,1)
+
+	def dump_requester(self):
+		self.ControlModule.request(1,1,1)
+
+	def kill_requester(self):
+		self.ControlModule.request(1,1,1)
+
+	def execute(self):
+		sleep(0.05)
+		self.pipe_value({'moving': False})
+		self.end_mine_requester()
+		self.pipe_value({'mining': False, 'dumping': True})
+		self.dump_requester()
+		self.pipe_value({'dumping': False, 'full': False})
+		self.kill_requester()
 		self.pipe_value(dict(fin=True))
 		self.end_state()
 
-	def serialize_data(self): #TODO
-		return 0
+	def cmd_vel_callback(self):
+		return 0, 0
 
-	def callback(self): #lets the control client know that it is done
-		if string == 'done'+CHECKSUM:
-			self.done=True
-		return string+CHECKSUM
+	def init_control_module(self):
+		self.ControlModule = KermitControlModule(requesting=True, publishing=True)
+		self.ControlModule.set_cmd_vel_get_data(self.cmd_vel_callback)
+		self.start_kermit()
 
-	def build_pub_sub(self): #recieves back the information it has that is relevant
-		self.CC.serve(self.callback)
+	def end_state(self):
+		self.ControlModule.quit_kermit()
 
-	def exit_handler(self): #lets the system know that it is doen
-		self.CC.request("tcp://localhost:5555","soft_exit")
-		while not self.done:
-			sleep(0.05)
+
 
 def Bez_Cur(Start,End,Attractor,weight):
 	#Start End and Attractor must be x,y pairs, weight [-1,1]
