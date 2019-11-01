@@ -7,7 +7,9 @@ from tf.transformations import euler_from_quaternion
 import tf2_ros
 import geometry_msgs.msg
 import math
+# Preforms the calculation for the array of doubles positions from PosEstimator
 
+# @breif If it was set for the main it will start compuations asking if it is a camera, if it is, it will transform its position relative to what it is seeing.
 if __name__=='__main__':
     rospy.init_node('Bot_Position',anonymous=True)
 
@@ -25,6 +27,7 @@ if __name__=='__main__':
             continue
         timer=trans_back_side.header.stamp.secs
 
+        # If the sensor and the internal clock of the machine is still relativly close to each other, it will keep going, otherwise it will throw it a termination integer.
         if (rospy.get_time()-timer)<1.5:
             bot_pos=geometry_msgs.msg.Vector3()
 

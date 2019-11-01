@@ -35,7 +35,7 @@ class KermitControlModule:
         self.data_callback = None
 
         self.command = None
-
+    #  Checks to see if the requester is set to pass otherwise prints an error message.
     def __request(self, message):
         if not self.requesting:
             print("Error, you didn't pass True to requesting on construction")

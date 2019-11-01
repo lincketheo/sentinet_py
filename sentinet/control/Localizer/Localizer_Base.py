@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from sentinet.curmt import KermitControlModule
 import numpy as np
 
+#Template for localizers
 
 class LocalizerBase(ABC):
 	def __init__(self, pipe, sensors):
@@ -24,7 +25,7 @@ class LocalizerBase(ABC):
 	def dynamics_model(self):
 		pass
 
-class SensorBase(ABC):
+class SensorBase(ABC): #Template for a sensor
 	def __init__(self):
 		self.ControlModule = KermitControlModule()
 

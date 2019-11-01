@@ -4,7 +4,7 @@
 from ControlClient import ControlClient
 import time
 
-
+# Basic test call
 def get_data():
     print("Sending data")
     return "test"

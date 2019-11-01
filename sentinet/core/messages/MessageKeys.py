@@ -85,7 +85,7 @@ serialize_funcs = {
         ARRAY :     ((lambda val, byte_length: type(val) == bytearray and len(val) == byte_length),
                     (lambda val : val))}
 
-
+# Stores and reivieves the index and values of a data element setting data size, the fact that it is positive or negative where it is and its value.
 class DataElement:
     def __init__(self, value, data_size, index, signed):
         self.data_size = data_size

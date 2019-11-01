@@ -13,7 +13,7 @@ class Data_Message:
     # @return A new Data message
     def __init__(self): 
         self.header = copy.deepcopy(default_header)
-        # + 1 for null terminator
+        # + 1 for null terminator case
         self.header_size = self.header["FIELDS"].index + self.header["FIELDS"].data_size + 1
         self.message = bytearray(self.header_size) 
         # Serialize header, if an error occurs here
@@ -72,7 +72,7 @@ class Data_Message:
     ##
     # @brief Pushes a new data element to the end of data message (see set_data for alternative)
     #
-    # @param data The "raw" data to serializable by the codes defined in MEssageKeys.py
+    # @param data The "raw" data to serializable by the codes defined in MessageKeys.py
     # @param bytes_size The size of the data - does some checks to make sure this is right
     # @param type_code The type code, see MessageKeys.py
     #
@@ -81,7 +81,7 @@ class Data_Message:
         # Do the preliminary checks on the data
         if type_code in serialize_funcs:
             if serialize_funcs[type_code][0](data, bytes_size):
-                data = serialize_funcs[type_code][1](data)
+               data = serialize_funcs[type_code][1](data)
             else:
                 print("Invalid data type for declared type code")
                 return False
@@ -99,7 +99,7 @@ class Data_Message:
         self.header["BYTE_LENGTH"].data += 3 + bytes_size
 
     ##
-    # @brief Sets data within a message, ideal for when you know the attributes of the message
+    # @brief Sets data within a message, idealy for when you know the attributes of the message
     #
     # @note This function sets a new data element and updates indices
     #
@@ -132,13 +132,13 @@ class Data_Message:
         if size == bytes_size:
             self.message[i] = bytes_size
             self.message[i + 1] = ord(type_code)
-            self.message[i + 2:i + 2 + bytes_size] = data
+            self.message[i+2 : i+2+bytes_size] = data
 
         elif size > bytes_size:
             self.message[i] = bytes_size
             self.message[i + 1] = ord(type_code)
-            self.message[i + 2:i + 2 + bytes_size] = data
-            del self.message[i + 2 + bytes_size: i + 2 + size]
+            self.message[i+2 : i+2+bytes_size] = data
+            del self.message[i+2+bytes_size : i+2+size]
             diff = size - bytes_size
             for i in range(len(self.indices) - index - 1):
                 self.indices[i + index + 1] -= diff
@@ -160,7 +160,7 @@ class Data_Message:
     ##
     # @brief Gets byte data at a specified index
     #
-    # @param index The index to retriev
+    # @param index The index to retrieve
     #
     # @return The data
     def get_data(self, index):
@@ -169,7 +169,7 @@ class Data_Message:
             return None
         index = self.indices[index]
         size = self.message[index]
-        return self.message[index + 2:index + 2 + size]
+        return self.message[index+2 : index+2+size]
 
     ##
     # @brief Parse from a message and update self attributes
@@ -189,7 +189,7 @@ class Data_Message:
         if self.message[12] != 0:
             return 2
         bytes_size = int.from_bytes(self.message[self.header["BYTE_LENGTH"].index: \
-                self.header["BYTE_LENGTH"].index + self.header["BYTE_LENGTH"].data_size], byteorder = ENDIAN)
+                     self.header["BYTE_LENGTH"].index + self.header["BYTE_LENGTH"].data_size], byteorder = ENDIAN)
         if bytes_size != len(self.message):
             return 3
         while i < bytes_size:

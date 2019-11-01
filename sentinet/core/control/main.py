@@ -4,7 +4,7 @@
 from ControlClient import ControlClient
 import time
 
-
+#Simple test case function used to view if messages are returning properly.
 def get_data():
     print("Sending data")
     return "test string "

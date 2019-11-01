@@ -149,13 +149,13 @@ class RequesterThreadSpace(ThreadSpace):
         # I need to do a timing test to see if connecting every loop changes anything
         self.socket.connect(self.sock_addr)
 
-    def poll(self):
+    def poll(self): #sends information waiting for a period before shutting off
         self.socket.send_string("%d %d" % (self.topic, self.get_request()))
         ret = self.socket.recv_string()
         self.recieve_request(ret)
         time.sleep(self.period)
 
-    def set_address(self, address):
+    def set_address(self, address): #sets the address for this control client
         self.socket.disconnect(self.sock_addr)
         self.sock_addr = address
         self.socket.connect(self.sock_addr)
@@ -170,6 +170,7 @@ class ServerThreadSpace(ThreadSpace):
     # @param context The "global" context to create sockets from
     # @param callback A Str (str) function that takes a string and returns a string to publish
     # @param address The address to bind to
+    #
     # @param period The period to check. This is normally ignored, I will do some unit tests
     def __init__(self, context, callback, address, period = -1):
         super().__init__()
@@ -301,7 +302,7 @@ class ControlClient:
     ##
     # @brief Create a concurrent publisher to use in this thread
     #
-    # @param publisher The publisher to create a publisher with
+    # @param publisher The publishser that is recieving infromation
     # @param address The address to bind to
     def init_self_publisher(self, publisher, address):
         if publisher:
@@ -345,7 +346,7 @@ class ControlClient:
             self.this_client.disconnect(address)
             return val
 
-    def publish(pub: pub_params):
+    def publish(pub: pub_params): #publishes the control clients information
         self.publish(pub.address, pub.topic, pub.get_data, pub.period, pub.start_on_creation)
     def publish(self, sock_addr, topic, get_data, period, start_on_creation=False):
         if sock_addr not in self.publishers:
@@ -359,14 +360,14 @@ class ControlClient:
         else:
             print("Thread %s already in publishers" % (sock_addr))
 
-    def cancel_periodic_publisher(self, sock_addr):
+    def cancel_periodic_publisher(self, sock_addr): #stops the publisher from looping though
         if sock_addr in self.publishers:
             if self.publishers[sock_addr].is_alive():
                 self.publishers[sock_addr].stop()
         else:
             print("%s does not exist" % (sock_addr))
 
-    def subscribe(sub: sub_params):
+    def subscribe(sub: sub_params): #makes and initializes the subscriber
         self.subscribe(sub.address, sub.topic, sub.callback, sub.start_on_creation)
     def subscribe(self, sock_addr, topic, callback, period = -1, start_on_creation = False):
         if sock_addr not in self.subscribers:
@@ -380,13 +381,22 @@ class ControlClient:
         else:
             print("%s already exists in subscriber map" % (sock_addr))
 
-    def cancel_periodic_subscriber(self, sock_addr):
+    def cancel_periodic_subscriber(self, sock_addr): #ends the periodic subscriber from looping though
         if sock_addr in self.subscribers:
             if self.subscribers[sock_addr].is_alive():
                 self.subscribers[sock_addr].stop()
         else:
             print("%s does not exist" % (sock_addr))
 
+    ##
+    # @brief Starts up the requester
+    #
+    # @note I have no ida what I am doing
+    #
+    # @params req_params This is all the relevant information for making the requester which has the 
+    #                    the address of the requester, the get_data of information that it has, the callback information
+    #                    and the period of which the requester should loop, keep in mind the start_on_creation is not set able and needs to 
+    #                    be confirmed to start
     def request(req: req_params):
         self.request(req.address, req.get_data, req.callback, req.period, req.start_on_creation)
     def request(self, destination, get_data, callback, period, start_on_creation = False):
@@ -402,13 +412,22 @@ class ControlClient:
             print("%s already exists in requester map" % (address))
         
 
-    def cancel_periodic_requester(self, sock_addr):
+    def cancel_periodic_requester(self, sock_addr): # stops the requester from looping its information
         if sock_addr in self.requesters:
             if self.requesters[sock_addr].is_alive():
                 self.requesters[sock_addr].stop()
         else:
             print("%s does not exist" % (sock_addr))
 
+    ##
+    # @brief Requests and constructs a server.
+    #
+    # @note I have no idea what I am doing.
+    #
+    # @param serve_params The vital information needed for making the server including the component itself, the callback message, 
+    #                     and the definition of it should start immediatly, period by default is -1
+    #
+    # @return A message if the server does not exist.
     def serve(srv: serve_params):
         serve(srv.address, srv.callback, srv.start_on_creation)
     def serve(self, address, callback, period = -1, start_on_creation = False):
@@ -422,6 +441,14 @@ class ControlClient:
         else:
             print("%s already exists in server map" % (address))
 
+    ##
+    # @brief Ends a server for a control client.
+    #
+    # @note I have no idea what I am doing.
+    #
+    # @param address The address location/name for the server.
+    #
+    # @return A message if the server does not exist.
     def terminate_server(self, address):
         if address in self.servers:
             if self.servers[address].is_alive():

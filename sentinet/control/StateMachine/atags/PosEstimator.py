@@ -3,11 +3,14 @@ import numpy as np
 import rospy
 import geometry_msgs.msg
 
+# This entire function estimates and finds the actual position of the robot by approximating sensor values using one value of a double,
+# and 3 other integer values within the positions function.
 global active_tags
 global Position
 active_tags=[0,0,0,0]
 Position=[[np.nan,np.nan,np.nan],[np.nan,np.nan,np.nan],[np.nan,np.nan,np.nan],[np.nan,np.nan,np.nan]]
 
+# @brief This is the callback that stores the values for the sensor as doubles of an X,Y,Z value if it was not given a failed y value (-42.0).
 def callback0(data):
     global Position
     global active_tags
@@ -17,6 +20,7 @@ def callback0(data):
         Position[0][1]=data.y
         Position[0][2]=data.z
 
+# @brief This is the callback that stores the values for the sensor as integer of an X,Y,Z value if it was not given a failed y value (-42).
 def callback1(data):
     global Position
     global active_tags
@@ -26,6 +30,7 @@ def callback1(data):
         Position[1][1]=data.y
         Position[1][2]=data.z
 
+# @brief This is the callback that stores the values for the sensor as integer of an X,Y,Z value if it was not given a failed y value (-42).
 def callback2(data):
     global Position
     global active_tags
@@ -35,6 +40,7 @@ def callback2(data):
         Position[2][1]=data.y
         Position[2][2]=data.z
 
+# @brief This is the callback that stores the values for the sensor as integer of an X,Y,Z value if it was not given a failed y value (-42).
 def callback3(data):
     global Position
     global active_tags
@@ -44,12 +50,14 @@ def callback3(data):
         Position[3][1]=data.y
         Position[3][2]=data.z
 
+# @brief This publishes and sends to a client control all four arrays with each array of positions values with their names and content.
 def pos_sub():
     rospy.Subscriber('Bot_Pos0',geometry_msgs.msg.Vector3,callback0)
     rospy.Subscriber('Bot_Pos1',geometry_msgs.msg.Vector3,callback1)
     rospy.Subscriber('Bot_Pos2',geometry_msgs.msg.Vector3,callback2)
     rospy.Subscriber('Bot_Pos3',geometry_msgs.msg.Vector3,callback3)
 
+# @brief This sets up a publisher and a subber if not tag is set it will set itself to the error value.
 def pubsub():
     global Position
     global active_tags

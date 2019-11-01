@@ -4,40 +4,48 @@ import threading
 
 POLLER_TIMEOUT = 10 # milliseconds
 
+# Default get_data callback
 def get_data_default():
     return "default"
 
+# Default subscriber callback
 def sub_default_callback(val):
     print("Subscriber recieved " + val)
 
+# Default Server callback
 def serve_default_callback(val):
     print("server recieved val " + val)
     return val + " response"
 
+# Default requester callback
 def req_callback(val):
     print("requester recieved val " + val)
 
-class pub_params:
-    def __init__(self):
+# A nice package to contain publisher meta information
+class pub_params():
+    def __init__():
         self.address = "tcp://localhost:5555"
         self.get_data = get_data_default
         self.topic = "" 
         self.period = 1
         self.start_on_creation = True
 
-class sub_params:
-    def __init__(self):
+# A Nice package for subscriber meta information
+class sub_params():
+    def __init__():
         self.address = "tcp://localhost:5556"
         self.callback = sub_default_callback
         self.topic = ""
         self.start_on_creation = True
 
-class serve_params:
-    def __init__(self):
+# A Nice Package for server meta information
+class serve_params():
+    def __init__():
         self.address = "tcp://localhost:5570"
         self.callback = serve_default_callback
         self.start_on_creation = True
 
+# A Nice Package for requester meta information
 class req_params():
     def __init__():
         self.address = "tcp://localhost:5571"
@@ -339,31 +347,74 @@ class ControlClient:
             val = self.this_client.recv()
             self.this_client.disconnect(address)
             return val
-
+    ##
+    # @brief initiates publication request
+    #
+    # @note I have no idea what I am doing.
+    #
+    # @param pub_params The publication parameters including the address, the topic, the period, and start on creation execution pattern.
     def spin_publisher(self, pub: pub_params):
         self.publish(pub.address, pub.topic, pub.get_data, pub.period, pub.start_on_creation)
+    ##
+    # @brief Actualy publishes the the control control client.
+    #
+    # @note I have no idea what I am doing.
+    #
+    # @param sock_addr The index of the control client being accessed.
+    # @param topic The topic the control client is trying to publish you.
+    # @param get_data A callback that returns a byte string to publish
+    # @param period The polling period, usually not set, will do some unit tests
+    # @param start_on_creation the boolean case telling the function to just build defaultly set to false.
+    #
+    # @return The response if any from the server
     def publish(self, sock_addr, topic, get_data, period, start_on_creation=False):
         if sock_addr not in self.publishers:
             self.publishers[sock_addr] = PublisherThreadSpace(context = self.context,\
                                                                         period = period,\
                                                                         topic = topic,\
-                                                                        get_data = get_data, \
+                                                                        get_data = get_data,\
                                                                         address = sock_addr)
             if start_on_creation:
                 self.publishers[sock_addr].start()
         else:
             print("Thread %s already in publishers" % (sock_addr))
 
+    ##
+    # @brief Cancels any publication to the function.
+    #
+    # @note I have no idea what I am doing.
+    #
+    # @param sock_addr The index of the control client being accessed.
+    #
+    # @return Prints an error message if the socket is does not exist and the socket is not alive it will output an error message.
     def cancel_periodic_publisher(self, sock_addr):
         if sock_addr in self.publishers:
             if self.publishers[sock_addr].is_alive():
                 self.publishers[sock_addr].stop()
-        else:
+        else:                                          
             print("%s does not exist" % (sock_addr))
 
+    ##
+    # @brief Starts the publishers for the control control client through a subscriber.
+    #
+    # @note I have no idea what I am doing.
+    #
+    # @param sub_params the subscription features required to get a subscriber going.
     def spin_subscriber(self, sub: sub_params):
         self.subscribe(sub.address, sub.topic, sub.callback, start_on_creation = sub.start_on_creation)
 
+    ##
+    # @brief Actually subscribes something to a control client.
+    #
+    # @note I have no idea what I am doing.
+    #
+    # @param sock_addr The index of the control client being accessed.
+    # @param topic The topic the control client is trying to publish you.
+    # @param get_data A callback that returns a byte string to publish
+    # @param period The polling period, usually not set, will do some unit tests
+    # @param start_on_creation the boolean case telling the function to just build defaultly set to false.
+    #
+    # @return A message if the subscriber already exists.
     def subscribe(self, sock_addr, topic, callback, period = -1, start_on_creation = False):
         if sock_addr not in self.subscribers:
             self.subscribers[sock_addr] = SubscriberThreadSpace(context = self.context, \
@@ -376,6 +427,14 @@ class ControlClient:
         else:
             print("%s already exists in subscriber map" % (sock_addr))
 
+    ##
+    # @brief Ends a subscription to a control client.
+    #
+    # @note I have no idea what I am doing.
+    #
+    # @param sock_addr The index of the control client being accessed.
+    #
+    # @return A message if the subscriber does not exist.
     def cancel_periodic_subscriber(self, sock_addr):
         if sock_addr in self.subscribers:
             if self.subscribers[sock_addr].is_alive():
@@ -383,8 +442,29 @@ class ControlClient:
         else:
             print("%s does not exist" % (sock_addr))
 
+    ##
+    # @brief Starts the publishers for the control control client through a requester.
+    #
+    # @note I have no idea what I am doing.
+    #
+    # @param req_params the subscription features required to get a requester going.
+    #
+    # @return Starts up the process for requester.
     def spin_requester(self, req: req_params):
         self.request(req.address, req.get_data, req.callback, req.period, req.start_on_creation)
+    
+    ##
+    # @brief Actually starts the requester
+    #
+    # @note I have no idea what I am doing.
+    #
+    # @param destination The destination for the requester.
+    # @param get_data A callback that returns a byte string to publish
+    # @param callback where the message will return to.
+    # @param period The polling period, usually not set, will do some unit tests
+    # @param start_on_creation the boolean case telling the function to just build defaultly set to false.
+    #
+    # @return sets up the requester failing if it does not exist.
     def request(self, destination, get_data, callback, period, start_on_creation = False):
         if address not in self.requesters:
             self.requesters[address] = RequesterThreadSpace(context = self.context, \
@@ -397,7 +477,14 @@ class ControlClient:
         else:
             print("%s already exists in requester map" % (address))
         
-
+    ##
+    # @brief Ends a requester for a control client.
+    #
+    # @note I have no idea what I am doing.
+    #
+    # @param sock_addr The index of the control client being accessed.
+    #
+    # @return A message if the requester does not exist.
     def cancel_periodic_requester(self, sock_addr):
         if sock_addr in self.requesters:
             if self.requesters[sock_addr].is_alive():
@@ -405,8 +492,28 @@ class ControlClient:
         else:
             print("%s does not exist" % (sock_addr))
 
+    ##
+    # @brief Starts the server in preperation of starting.
+    #
+    # @note I have no idea what I am doing.
+    #
+    # @param serve_params the server parameters required to get a server going.
+    #
+    # @return Starts up the process for server.
     def spin_server(self, srv: serve_params):
         serve(srv.address, srv.callback, srv.start_on_creation)
+    
+    ##
+    # @brief Actually starts the requester
+    #
+    # @note I have no idea what I am doing.
+    #
+    # @param address The address location/name for the server.
+    # @param callback where the message will return to.
+    # @param period The polling period, usually not set, will do some unit tests
+    # @param start_on_creation the boolean case telling the function to just build defaultly set to false.
+    #
+    # @return sets up the server failing if it does not exist.
     def serve(self, address, callback, period = -1, start_on_creation = False):
         if address not in self.servers:
             self.servers[address] = ServerThreadSpace(context = self.context, \
@@ -418,6 +525,14 @@ class ControlClient:
         else:
             print("%s already exists in server map" % (address))
 
+    ##
+    # @brief Ends a server for a control client.
+    #
+    # @note I have no idea what I am doing.
+    #
+    # @param address The address location/name for the server.
+    #
+    # @return A message if the server does not exist.
     def terminate_server(self, address):
         if address in self.servers:
             if self.servers[address].is_alive():

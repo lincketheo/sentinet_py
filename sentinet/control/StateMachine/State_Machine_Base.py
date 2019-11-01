@@ -3,8 +3,8 @@ from time import time
 from abc import ABC, abstractmethod
 from sentinet.core.control.ControlClient import ControlClient
 
-class ActionStateBase(ABC):
-	def __init__(self,pipe): #initialize action state with comm pipe to state machinig
+class ActionStateBase(ABC): #default contructor for each state of the state machine
+	def __init__(self,pipe): #initialize action state with comm pipe to state machine
 		self.pipe=pipe
 		self.CC=ControlClient()
 		self.build_pub_sub()
@@ -14,17 +14,17 @@ class ActionStateBase(ABC):
 		pass
 
 	@abstractmethod
-	def build_pub_sub(self):
+	def build_pub_sub(self): #builds the pass and recieve sensor for recieving information
 		pass
 
-	def set_data(self,data):
+	def set_data(self,data): #sets the data that it has
 		self.data=data
 
-	def get_data(self):
+	def get_data(self): #retrieves the data relevant from this state
 		return self.data
 
 	@abstractmethod
-	def serialize_data(self):
+	def serialize_data(self): #processess and sends valid information from this state
 		pass
 
 	def get_state(self): #get system state from state machine

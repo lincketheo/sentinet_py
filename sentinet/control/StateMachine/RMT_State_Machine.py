@@ -12,6 +12,7 @@ PATH_TOL=0.05 #meters
 CHECKSUM="CHECKSUM"
 # todo: better transition law
 #		action states: getter, callback, requester
+# BIGG KERMIT DATA BRAIN!!!!!!!!!!
 class RMT_SM(StateMachineBase):
 	#mining_zone=[[x_lower,x_upper],[y_lower,y_upper]]
 	#dumping_zone=[[x_lower,x_upper],[y_lower,y_upper]]
@@ -24,6 +25,7 @@ class RMT_SM(StateMachineBase):
 		self.execute_state(state_list[0])
 		self.run_SM()
 	
+	#Defines what is legal for state transfer between states to make sure
 	def transistion_law(self): #transition law defined in RMT SM Definition, see Drive
 		run_time=time()-self.init_time
 		# Soft Exit Conditions
@@ -151,16 +153,16 @@ class RMT_SM(StateMachineBase):
 				self.pipe_state()
 
 class mv2mine(ActionStateBase): #move to mining position action state
-	def __init__(self,pipe):
+	def __init__(self,pipe): #starts using the init function to a pipe listed to it super class
 		super().__init__(pipe)
 
-	def execute(self):
+	def execute(self): #starts the mining process
 		self.target=self.select_target_zone()
 		self.path=self.determine_path()
 		self.run_PD()
 		self.end_state()
 
-	def build_pub_sub(self):
+	def build_pub_sub(self): #Establishes publisher and subscriber
 		self.pub_params=pub_params()
 		self.pub_params.get_data=self.serialize_data
 		self.pub_params.topic="cmd_vel"
@@ -223,13 +225,13 @@ class mv2dump(ActionStateBase): #moving to dumping zone mining state
 	def __init__(self,pipe):
 		super().__init__(pipe)
 
-	def execute(self):
+	def execute(self): #starts the dumpint action
 		self.target=self.select_target_zone()
 		self.path=self.determine_path()
 		self.run_PD()
 		self.end_state()
 
-	def build_pub_sub(self):
+	def build_pub_sub(self): #develops the publisher and subber for what is happening inside the function
 		self.pub_params=pub_params()
 		self.pub_params.get_data=self.serialize_data
 		self.pub_params.topic="cmd_vel"
@@ -261,7 +263,7 @@ class mv2dump(ActionStateBase): #moving to dumping zone mining state
 		sleep(0.05)
 		self.pipe_value(dict(moving=False))
 
-class dump(ActionStateBase):
+class dump(ActionStateBase): #Class for the to dump state.
 	def __init__(self,pipe):
 		super().__init__(pipe)
 		self.done=False
@@ -289,23 +291,23 @@ class dump(ActionStateBase):
 		self.end_state()
 
 class init_state(ActionStateBase): #initialization state
-	def __init__(self,pipe):
+	def __init__(self,pipe): #initializes the initializer
 		super().__init__(pipe)
 		self.stowed=True
 
-	def execute(self):
+	def execute(self): #starts and defines its state as initialize
 		self.dep_auger()
 		self.state=self.get_state()
 		self.find_self()
 		self.end_state()
 
-	def callback(self):
+	def callback(self): #returns and sets for stowed and start
 		if string == 'done'+CHECKSUM:
 			self.pipe_value(dict(stowed=false))
 			self.stowed=False
 		return string+CHECKSUM
 
-	def build_pub_sub(self):
+	def build_pub_sub(self): #publishes and subbs its content relevant for execution
 		self.CC.serve(self.callback)
 
 	def serialize_data(self): #TODO
@@ -326,11 +328,11 @@ class init_state(ActionStateBase): #initialization state
 			self.scan_camera()
 
 class soft_exit(ActionStateBase): #planned soft exit state
-	def __init__(self,pipe):
+	def __init__(self,pipe): #initializes the soft exit state
 		super().__init__(pipe)
 		self.done=False
 
-	def execute(self):
+	def execute(self): #defines itself as completed and finished
 		self.exit_handler()
 		self.pipe_value(dict(fin=True))
 		self.end_state()
@@ -338,15 +340,15 @@ class soft_exit(ActionStateBase): #planned soft exit state
 	def serialize_data(self): #TODO
 		return 0
 
-	def callback(self):
+	def callback(self): #lets the control client know that it is done
 		if string == 'done'+CHECKSUM:
 			self.done=True
 		return string+CHECKSUM
 
-	def build_pub_sub(self):
+	def build_pub_sub(self): #recieves back the information it has that is relevant
 		self.CC.serve(self.callback)
 
-	def exit_handler(self):
+	def exit_handler(self): #lets the system know that it is doen
 		self.CC.request("tcp://localhost:5555","soft_exit")
 		while not self.done:
 			sleep(0.05)
