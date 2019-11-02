@@ -63,6 +63,7 @@ class DummySensor(SensorBase):
 	# @brief Just initializes the content inside in the class.
 	def __init__(self):
 		self.data = [0,0]
+		self.lock = Lock()
 		self.ControlModule = KermitControlModule(requesting=True)
 		self.ControlModule.set_data_callback(self.callback)
 
@@ -75,9 +76,10 @@ class DummySensor(SensorBase):
 	# @brief Assignes content and information for the sensor storing the sensors infromation in itself. Protecting information by locking it	
 	def callback(self, throttle: float, turn_ratio: float):
 		try:
-			Lock.acquire()
+			print(throttle,turn_ratio)
+			self.lock.acquire()
 			self.data = self.sensor_model(throttle, turn_ratio)
-			Lock.release()
+			self.lock.release()
 		except KeyboardInterrupt:
 			exit()
 		return
