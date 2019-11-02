@@ -73,7 +73,6 @@ class ThreadSpace(threading.Thread):
 
         while not self.exit_signal.isSet():
             try:
-                print("asd")
                 self.poll()
             except (KeyboardInterrupt, SystemExit):
                 cleanup_stop_thread()
@@ -82,7 +81,6 @@ class ThreadSpace(threading.Thread):
     ##
     # @brief Stop the thread
     def stop(self):
-        print("Here")
         self.lock.acquire()
         self.exit_signal.set()
         self.lock.release()
@@ -111,7 +109,7 @@ class PublisherThreadSpace(ThreadSpace):
 
         self.sock_addr = address
 
-        print(address)
+        print("Publisher started on ", address)
         self.socket.connect(address)
 
     ##
@@ -216,7 +214,7 @@ class SubscriberThreadSpace(ThreadSpace):
         self.topic = topic
         self.sock_addr = address
 
-        print(address)
+        print("Subscriber started on ", address)
         self.socket.connect(address)
         self.poller = zmq.Poller()
         self.poller.register(self.socket, zmq.POLLIN)
@@ -360,7 +358,7 @@ class ControlClient:
 
                 # Wait until we dont expect a reply
                 expect_reply = True
-                print(address)
+                print("Requesting from ", address)
                 while expect_reply:
                     # Poll the sockets
                     socks = dict(poll.poll(POLLER_TIMEOUT))
