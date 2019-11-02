@@ -29,7 +29,7 @@ class RMT_SM(StateMachineBase):
 	
 	#Defines what is legal for state transfer between states to make sure
 	def transition_law(self): #transition law defined in RMT SM Definition, see Drive
-		print("aaaaa", self.state)
+		print(self.state)
 		run_time=time()-self.init_time
 		# Soft Exit Conditions
 		if self.state['s'] == 0:
@@ -284,6 +284,7 @@ class mv2dump(ActionStateBase): #moving to dumping zone mining state
 		self.vel = np.array([0,0])
 		self.pos_diff_norm = np.linalg.norm(self.np_pos[:-2] - self.target)
 		while self.pos_diff_norm > PATH_TOL:
+			self.pipe_value({'v':True})
 			self.set_data(GLPDC(self.path, self.dpath, self.np_pos, self.vel, 1))
 			self.state = self.get_state()
 			self.vel = np.array([self.state['x'], self.state['y']]) - self.np_pos[:-2]

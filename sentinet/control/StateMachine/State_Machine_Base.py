@@ -7,7 +7,6 @@ from copy import deepcopy
 class ActionStateBase(ABC):
 	def __init__(self, pipe): #initialize action state with comm pipe to state machine
 		self.pipe = pipe
-		print('starting state')
 		self.state = self.get_state()
 		self.init_control_module()
 		self.execute()
@@ -19,11 +18,9 @@ class ActionStateBase(ABC):
 		return self.data
 
 	def get_state(self): #get system state from state machine
-		print('Action Reading')
 		return self.pipe.recv()
 
 	def pipe_value(self, value): #helper function to send value to state machine
-		print('action sending')
 		self.pipe.send(value)
 		sleep(0.05)
 
@@ -89,17 +86,14 @@ class StateMachineBase(ABC):
 		sleep(0.05)
 
 	def read_pipe(self): #helper function to read pipe in a non-blocking way
-		print('Machine Reading Action')
 		return self.pipe.recv()
 
 	def read_loc_pipe(self):
-		print('Machine Reading Loc')
 		return self.loc_pipe.recv()
 
 	def pipe_localizer(self,value):
 		self.loc_pipe.send(value)
 
 	def pipe_state(self): #send system state to action state
-		print('Machine Sending')
 		self.pipe.send(self.state)
 		sleep(0.05)

@@ -7,7 +7,6 @@ import numpy as np
 
 class LocalizerBase(ABC):
 	def __init__(self, pipe, sensors):
-		print('starting loc')
 		self.pipe = pipe
 		self.sensors = sensors
 		self.position = np.array([None, None, None])
@@ -19,7 +18,6 @@ class LocalizerBase(ABC):
 			sensor.start_sensor()
 
 	def pipe_value(self,value): #helper function to send value to state machine
-		print('loc sending')
 		self.pipe.send(value)
 
 	def end_localizer(self):
@@ -27,7 +25,6 @@ class LocalizerBase(ABC):
 			sensor.quit_sensor()
 
 	def read_pipe(self): #helper function to read pipe in a non-blocking way
-		print('Loc Reading')
 		return self.pipe.recv()
 
 	@abstractmethod
