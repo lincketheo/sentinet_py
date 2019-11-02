@@ -96,8 +96,8 @@ class StateMachineBase(ABC):
 		print('Machine Reading Loc')
 		return self.loc_pipe.recv()
 
-	def end_localizer(self):
-		self.loc_pipe.send('fin')
+	def pipe_localizer(self,value):
+		self.loc_pipe.send(value)
 
 	def pipe_state(self): #send system state to action state
 		print('Machine Sending')
