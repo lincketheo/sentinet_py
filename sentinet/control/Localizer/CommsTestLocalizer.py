@@ -18,13 +18,13 @@ class DummyLocalizer(LocalizerBase):
 	def __init__(self, pipe, sensors):
 		super().__init__(pipe, sensors)
 		if None in self.position:
-			self.position.fill(0)
+			self.position.fill(0.0)
 		if None in self.velocity:
-			self.velocity.fill(0)
+			self.velocity.fill(0.0)
 		if None in self.ang_position:
-			self.ang_position.fill(0)
+			self.ang_position.fill(0.0)
 		if None in self.ang_velocity:
-			self.ang_velocity.fill(0)
+			self.ang_velocity.fill(0.0)
 		self.pipe_value([self.position, self.ang_position])
 		self.run_localizer()
 			
