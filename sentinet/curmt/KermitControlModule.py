@@ -91,7 +91,8 @@ class KermitControlModule:
 
     # func gets two floats and returns void
     def __data_callback(self, incomming_message):
-        self.data_msg.parse_from_similar_message(incomming_message)
+        print(incomming_message)
+        print(self.data_msg.parse_from_similar_message(incomming_message))
         a = struct.unpack('f', self.data_msg.get_data(0))[0]
         b = struct.unpack('f', self.data_msg.get_data(1))[0]
         print(self.data_msg.message)

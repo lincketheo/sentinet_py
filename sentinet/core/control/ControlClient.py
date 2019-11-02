@@ -1,6 +1,8 @@
 import zmq
 import time
 import threading
+import signal
+import sys
 
 POLLER_TIMEOUT = -1 # milliseconds
 REQUEST_RETRIES = 3
@@ -55,6 +57,7 @@ class ThreadSpace(threading.Thread):
         super().__init__()
         self.exit_signal = threading.Event()
         self.lock = threading.Lock()
+        self.daemon = True
     
     ##
     # @brief To be overridden, the function to be executed continuously
@@ -67,15 +70,19 @@ class ThreadSpace(threading.Thread):
     # @brief The actual thread function (an overriden function)
     # @return When exit signal is set
     def run(self):
-        while True:
-            self.poll()
-            if self.exit_signal.isSet():
-                print("Exiting thread")
-                return
+
+        while not self.exit_signal.isSet():
+            try:
+                print("asd")
+                self.poll()
+            except (KeyboardInterrupt, SystemExit):
+                cleanup_stop_thread()
+                sys.exit()
 
     ##
     # @brief Stop the thread
     def stop(self):
+        print("Here")
         self.lock.acquire()
         self.exit_signal.set()
         self.lock.release()
