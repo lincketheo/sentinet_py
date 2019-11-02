@@ -11,8 +11,8 @@ DISCRETIZATION_SIZE=100
 ATTRACTOR=[0,0]
 PATH_TOL=0.05 #meters
 CHECKSUM="CHECKSUM"
-mining_zone=[[10.0,10.0],[10.0,10.0]]
-dumping_zone=[[15.5,15.5],[-10.0,-10.0]]
+mining_zone=[[10.0,20.0],[10.0,20.0]]
+dumping_zone=[[5.5,25.5],[-10.0,-20.0]]
 
 # todo: better transition law
 #		verify requester flags
@@ -197,7 +197,7 @@ class mv2mine(ActionStateBase): #move to mining position action state
 		exit()
 
 	def select_target_zone(self): #select target pos from zone as np array, zone boundaries hard coded from reqs
-		return [mining_zone[0][0], mining_zone[1][1]]
+		return [(mining_zone[0][0] + mining_zone[0][1])/2.0,(mining_zone[1][0] + mining_zone[1][1])/2.0]
 
 	def determine_path(self): #Bezier Curve Path Generator
 		self.path,self.dpath = Bez_Cur([self.state['x'], self.state['y']], self.target, ATTRACTOR,1)
@@ -272,7 +272,7 @@ class mv2dump(ActionStateBase): #moving to dumping zone mining state
 		pass
 
 	def select_target_zone(self): #hard coded return point based on reqs
-		return [dumping_zone[0][0],dumping_zone[1][1]]
+		return [(dumping_zone[0][0] + dumping_zone[0][1])/2.0,(dumping_zone[1][0] + dumping_zone[1][1])/2.0]
 
 	def determine_path(self): #Bezier curve path generator
 		self.path,self.dpath = Bez_Cur([self.state['x'], self.state['y']], self.target, ATTRACTOR,1)
