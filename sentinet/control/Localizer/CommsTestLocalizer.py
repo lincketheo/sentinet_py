@@ -1,6 +1,7 @@
 from sentinet.control.Localizer.Localizer_Base import LocalizerBase, SensorBase
 from threading import Lock
 from sentinet.curmt import KermitControlModule
+import numpy as np
 
 # Some default variables for function calls.
 turn_gain = 0.1
