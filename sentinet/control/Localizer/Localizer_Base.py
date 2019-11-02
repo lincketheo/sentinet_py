@@ -19,6 +19,7 @@ class LocalizerBase(ABC):
 			sensor.start_sensor()
 
 	def pipe_value(self,value): #helper function to send value to state machine
+		print('loc sending')
 		self.pipe.send(value)
 
 	def end_localizer(self):
