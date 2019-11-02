@@ -93,8 +93,10 @@ class KermitControlModule:
 
 
     def data_callback_(self, incomming_message):
+        self.data_msg.parse_from_similar_message(incomming_message)
         a = struct.unpack('f', self.data_msg.get_data(0))[0]
         b = struct.unpack('f', self.data_msg.get_data(1))[0]
+        print(a, b)
         print(self.data_msg.message)
         self.data_callback(float(a), float(b))
 
