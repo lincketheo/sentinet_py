@@ -61,6 +61,7 @@ class DummyLocalizer(LocalizerBase):
 class DummySensor(SensorBase):
 	# @brief Just initializes the content inside in the class.
 	def __init__(self):
+		self.data = None
 		self.ControlModule = KermitControlModule(requesting=True)
 		self.ControlModule.set_data_callback(self.callback)
 
