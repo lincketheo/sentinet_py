@@ -90,14 +90,8 @@ class KermitControlModule:
         self.cmd_vel.start_on_creation = True 
 
     # func gets two floats and returns void
-<<<<<<< HEAD
-    def data_callback_(self, incomming_message):
-        self.data_msg.parse_from_similar_message(incomming_message)
-=======
+
     def __data_callback(self, incomming_message):
-        print(incomming_message)
-        print(self.data_msg.parse_from_similar_message(incomming_message))
->>>>>>> 09cb8594e4b2e45efdd453f0eb735811f5ade450
         a = struct.unpack('f', self.data_msg.get_data(0))[0]
         b = struct.unpack('f', self.data_msg.get_data(1))[0]
         print(self.data_msg.message)
