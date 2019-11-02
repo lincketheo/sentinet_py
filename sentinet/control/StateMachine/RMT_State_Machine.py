@@ -15,8 +15,6 @@ CHECKSUM="CHECKSUM"
 #		verify requester flags
 #		dynamic mapping in movement states
 class RMT_SM(StateMachineBase):
-	mining_zone=[[10.0,10.0],[10.0,10.0]]
-	dumping_zone=[[15.5,15.5],[-10.0,-10.0]]
 	def __init__(self, alphabet, state_list, t_max, localizer, sensors, init_state=None):
 		super().__init__(alphabet, state_list, t_max, localizer, sensors, init_state=init_state)
 		self.init_system()
@@ -128,16 +126,16 @@ class RMT_SM(StateMachineBase):
 	def update_system_state(self): #update sys_state from localizer
 		pos=self.read_loc_pipe()
 		if pos is not None:
-			self.state['x']=pos[0][0]
-			self.state['y']=pos[0][1]
-			self.state['th']=pos[1][0]
+			self.state['x']=pos[0][0][0]
+			self.state['y']=pos[0][1][0]
+			self.state['th']=pos[1][0][0]
 
 	def run_SM(self): #master run loop
 		while True:
 			try:
 				self.update_system_state()
 				if self.action_state.is_alive:
-					pipe_check=None#self.read_pipe()
+					pipe_check=self.read_pipe()
 				if pipe_check is not None:
 					keys=pipe_check.keys()
 					if 'fin' in keys:
@@ -146,7 +144,7 @@ class RMT_SM(StateMachineBase):
 					else:
 						for key in keys:
 							self.state[key]=pipe_check[key]
-				new_state=self.transition_law()
+				new_state=self.state_list[self.transition_law()]
 				if new_state==self.curr_state:
 					self.pipe_state()
 				else:
@@ -159,7 +157,9 @@ class RMT_SM(StateMachineBase):
 				sys.exit()
 
 class mv2mine(ActionStateBase): #move to mining position action state
+	mining_zone=[[10.0,10.0],[10.0,10.0]]
 	def __init__(self, pipe): #starts using the init function to a pipe listed to it super class
+		self.data = [0.0, 0.0]
 		super().__init__(pipe)
 		#self.get_map()
 
@@ -181,7 +181,7 @@ class mv2mine(ActionStateBase): #move to mining position action state
 
 	def execute(self): # executes minning operations
 		self.target = self.select_target_zone()
-		self.path = self.determine_path()
+		self.determine_path()
 		self.run_PD()
 		self.end_state()
 
@@ -193,20 +193,19 @@ class mv2mine(ActionStateBase): #move to mining position action state
 		return [self.mining_zone[0][0], self.mining_zone[1][1]]
 
 	def determine_path(self): #Bezier Curve Path Generator
-		self.path,self.dpath = Bez_Cur([self.state['x'], self.state['y']], self.target, ATTRACTOR)
+		self.path,self.dpath = Bez_Cur([self.state['x'], self.state['y']], self.target, ATTRACTOR,1)
 
 	def run_PD(self): #while loop run of PD controller
 		self.pipe_value({'v':True})
-		self.np_pos = np.array([self.state['x'], self.state['y']])
-		self.vel = np.array([0,0])
-		self.pos_diff_norm = np.linalg.norm(self.np_pos - self.target)
+		self.np_pos = np.array([self.state['x'], self.state['y'], self.state['th']])
+		self.vel = np.array([0.0,0.0])
+		self.pos_diff_norm = np.linalg.norm(self.np_pos[:-2] - self.target)
 		while self.pos_diff_norm > PATH_TOL:
 			self.set_data(GLPDC(self.path, self.dpath, self.np_pos, self.vel, 0))
-			if self.get_state() is not None:
-				self.state = self.get_state()
-			self.vel = np.array([[self.state['x'],self.state['y']]])-self.np_pos
-			self.np_pos = np.array([self.state['x'],self.state['y']])
-			self.pos_diff_norm = np.linalg.norm(self.np_pos-self.target)
+			self.state = self.get_state()
+			self.vel = np.array([self.state['x'],self.state['y']])-self.np_pos[:-2]
+			self.np_pos = np.array([self.state['x'],self.state['y'], self.state['th']])
+			self.pos_diff_norm = np.linalg.norm(self.np_pos[:-2]-self.target)
 		self.set_data([0,0])
 		sleep(0.05)
 		self.pipe_value({'v':False})
@@ -234,13 +233,15 @@ class mine(ActionStateBase): #mining action state
 
 
 class mv2dump(ActionStateBase): #moving to dumping zone mining state
+	dumping_zone=[[15.5,15.5],[-10.0,-10.0]]
 	def __init__(self,pipe):
+		self.data = [0.0, 0.0]
 		super().__init__(pipe)
 		#self.get_map()
 
 	def execute(self):
 		self.target = self.select_target_zone()
-		self.path = self.determine_path()
+		self.determine_path()
 		self.run_PD()
 		self.end_state()
 
@@ -268,20 +269,19 @@ class mv2dump(ActionStateBase): #moving to dumping zone mining state
 		return [self.dumping_zone[0][0],self.dumping_zone[1][1]]
 
 	def determine_path(self): #Bezier curve path generator
-		self.path,self.dpath = Bez_Cur([self.state['x'], self.state['y']], self.target, ATTRACTOR)
+		self.path,self.dpath = Bez_Cur([self.state['x'], self.state['y']], self.target, ATTRACTOR,1)
 
 	def run_PD(self): #while loop for PD controller
 		self.pipe_value({'v':True})
-		self.np_pos = np.array([self.state['x'], self.state['y']])
+		self.np_pos = np.array([self.state['x'], self.state['y'], self.state['th']])
 		self.vel = np.array([0,0])
-		self.pos_diff_norm = np.linalg.norm(self.np_pos - self.target)
+		self.pos_diff_norm = np.linalg.norm(self.np_pos[:-2] - self.target)
 		while self.pos_diff_norm > PATH_TOL:
 			self.set_data(GLPDC(self.path, self.dpath, self.np_pos, self.vel, 1))
-			if self.get_state() is not None:
-				self.state = self.get_state()
-			self.vel = np.array([[self.state['x'], self.state['y']]]) - self.np_pos
-			self.np_pos=np.array([self.state['x'], self.state['y']])
-			self.pos_diff_norm=np.linalg.norm(self.np_pos - self.target)
+			self.state = self.get_state()
+			self.vel = np.array([self.state['x'], self.state['y']]) - self.np_pos[:-2]
+			self.np_pos=np.array([self.state['x'], self.state['y'], self.state['th']])
+			self.pos_diff_norm=np.linalg.norm(self.np_pos[:-2] - self.target)
 		self.set_data([0,0])
 		sleep(0.05)
 		self.pipe_value({'v':False})
@@ -310,21 +310,19 @@ class dump(ActionStateBase): #Class for the to dump state.
 class init_state(ActionStateBase): #initialization state
 	def __init__(self,pipe): #initializes the initializer
 		super().__init__(pipe)
-		print('init')
 	
 	def init_control_module(self):
 		self.ControlModule = KermitControlModule(requesting=True)
 		self.ControlModule.start_kermit()
 
 	def cam_requester(self):
-		#self.ControlModule.request(1)
+		self.ControlModule.request(1,1,1)
 		return
 
 	def execute(self):
 		try:
 			self.cam_requester()
 			self.pipe_value({'a': True})
-			sleep(1)
 			self.end_state()
 		except KeyboardInterrupt:
 			print('caught by state')
@@ -418,15 +416,15 @@ def GLPDC(path,pHeadings,position,velocity,backwards):
 			heading=heading+np.pi
 	if p_dev_n>PATH_TOL:
 		turn_ratio=(p_dev_th-heading)/np.pi*(-1)**backwards
-		throttle=0
+		throttle=0.0
 		if abs(turn_ratio)<0.1:
 			throttle=(-1)**backwards
 	elif abs(h_dev)>np.pi/4:
 		turn_ratio=h_dev/np.pi*(-1)**backwards
-		throttle=0
+		throttle=0.0
 	else:
 		turn_ratio=h_dev/np.pi*(-1)**backwards
 
-	return [throttle, turn_ratio]
+	return [float(throttle), float(turn_ratio)]
 
 
