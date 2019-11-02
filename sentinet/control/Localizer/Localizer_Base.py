@@ -10,10 +10,10 @@ class LocalizerBase(ABC):
 		print('starting loc')
 		self.pipe = pipe
 		self.sensors = sensors
-		self.position = np.full((3,1),None)
-		self.velocity = np.full((3,1),None)
-		self.ang_position = np.full((3,1),None)
-		self.ang_velocity = np.full((3,1),None)
+		self.position = np.array([None, None, None])
+		self.velocity = np.array([None, None, None])
+		self.ang_position = np.array([None, None, None])
+		self.ang_velocity = np.array([None, None, None])
 
 		for sensor in self.sensors.values():
 			sensor.start_sensor()

@@ -33,13 +33,15 @@ class DummyLocalizer(LocalizerBase):
 		# integrate sensor data forward
 		for sensor_name, sensor in zip(self.sensors.keys(),self.sensors.values()):
 			if sensor_name is 'DummySensor':
+				print("HERE")
+				print("a ", self.velocity, "b", self.ang_velocity, "c", self.position, "d", self.ang_position)
 				cmd_vel = sensor.get_data()
 				throttle = cmd_vel[0]
 				turn_ratio = cmd_vel[1]
-				self.velocity = np.array([np.cos(self.ang_position[0])*throttle*drive_gain, np.sin(self.ang_position[0])*throttle*drive_gain, 0])
+				self.velocity = np.array([np.cos(float(self.ang_position[0]))*throttle*drive_gain, np.sin(float(self.ang_position[0]))*throttle*drive_gain, 0])
 				self.ang_velocity = np.array([np.pi*turn_ratio*turn_gain, 0, 0])
-				self.position += np.array([self.velocity[0]*time_step, self.velocity[1]*time_step, self.velocity[2]*time_step])
-				self.ang_position += np.array([self.ang_velocity[0]*time_step, self.ang_velocity[1]*time_step, self.ang_velocity[2]*time_step])
+				self.position = self.position + np.array([self.velocity[0]*time_step, self.velocity[1]*time_step, self.velocity[2]*time_step])
+				self.ang_position = self.ang_position + np.array([self.ang_velocity[0]*time_step, self.ang_velocity[1]*time_step, self.ang_velocity[2]*time_step])
 		print('integrated pos is:', self.position)
 		self.pipe_value([self.position, self.ang_position])
 

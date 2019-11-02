@@ -11,6 +11,9 @@ DISCRETIZATION_SIZE=100
 ATTRACTOR=[0,0]
 PATH_TOL=0.05 #meters
 CHECKSUM="CHECKSUM"
+mining_zone=[[10.0,10.0],[10.0,10.0]]
+dumping_zone=[[15.5,15.5],[-10.0,-10.0]]
+
 # todo: better transition law
 #		verify requester flags
 #		dynamic mapping in movement states
@@ -26,6 +29,7 @@ class RMT_SM(StateMachineBase):
 	
 	#Defines what is legal for state transfer between states to make sure
 	def transition_law(self): #transition law defined in RMT SM Definition, see Drive
+		print("aaaaa", self.state)
 		run_time=time()-self.init_time
 		# Soft Exit Conditions
 		if self.state['s'] == 0:
@@ -53,15 +57,15 @@ class RMT_SM(StateMachineBase):
 				return 1
 
 		elif self.curr_state == 1: # Transition from mv2mine
-			if ((self.state['x'] < self.mining_zone[0][0] or self.state['x'] > self.mining_zone[0][1])
-				and (self.state['y'] < self.mining_zone[1][0] or self.state['y'] > self.mining_zone[1][1]) 
+			if ((self.state['x'] < mining_zone[0][0] or self.state['x'] > mining_zone[0][1])
+				and (self.state['y'] < mining_zone[1][0] or self.state['y'] > mining_zone[1][1]) 
 				and self.state['a'] is True  
 				and self.state['m'] is False 
 				and self.state['d'] is False 
 				and self.state['f'] is False):
 				return 1
-			elif ((self.state['x'] > self.mining_zone[0][0] and self.state['x'] < self.mining_zone[0][1])
-				and (self.state['y'] > self.mining_zone[1][0] and self.state['y'] < self.mining_zone[1][1])
+			elif ((self.state['x'] > mining_zone[0][0] and self.state['x'] < mining_zone[0][1])
+				and (self.state['y'] > mining_zone[1][0] and self.state['y'] < mining_zone[1][1])
 				and self.state['a'] is True
 				and self.state['m'] is False
 				and self.state['d'] is False
@@ -71,8 +75,8 @@ class RMT_SM(StateMachineBase):
 
 
 		elif self.curr_state == 2: # Transition from mine
-			if ((self.state['x'] > self.mining_zone[0][0] and self.state['x'] < self.mining_zone[0][1])
-				and (self.state['y'] > self.mining_zone[1][0] and self.state['y'] < self.mining_zone[1][1])
+			if ((self.state['x'] > mining_zone[0][0] and self.state['x'] < mining_zone[0][1])
+				and (self.state['y'] > mining_zone[1][0] and self.state['y'] < mining_zone[1][1])
 				and self.state['a'] is True
 				and self.state['m'] is True
 				and self.state['d'] is False
@@ -80,8 +84,8 @@ class RMT_SM(StateMachineBase):
 				and self.state['v'] is False):
 				return 2
 
-			elif ((self.state['x'] > self.mining_zone[0][0] and self.state['x'] < self.mining_zone[0][1])
-				and (self.state['y'] > self.mining_zone[1][0] and self.state['y'] < self.mining_zone[1][1])
+			elif ((self.state['x'] > mining_zone[0][0] and self.state['x'] < mining_zone[0][1])
+				and (self.state['y'] > mining_zone[1][0] and self.state['y'] < mining_zone[1][1])
 				and self.state['a'] is True
 				and self.state['m'] is False
 				and self.state['d'] is False
@@ -89,15 +93,15 @@ class RMT_SM(StateMachineBase):
 				and self.state['v'] is False):
 				return 3
 		elif self.curr_state == 3: # Transition from mv2dump
-			if ((self.state['x'] < self.dumping_zone[0][0] or self.state['x'] > self.dumping_zone[0][1])
-				and (self.state['y'] < self.dumping_zone[1][1] or self.state['y'] > self.dumping_zone[1][1])
+			if ((self.state['x'] < dumping_zone[0][0] or self.state['x'] > dumping_zone[0][1])
+				and (self.state['y'] < dumping_zone[1][1] or self.state['y'] > dumping_zone[1][1])
 				and self.state['a'] is True
 				and self.state['m'] is False
 				and self.state['d'] is False
 				and self.state['f'] is True):
 				return 3
-			elif ((self.state['x'] > self.dumping_zone[0][0] and self.state['x'] < self.dumping_zone[0][1])
-				and (self.state['y'] > self.dumping_zone[1][0] and self.state['y'] < self.dumping_zone[1][1])
+			elif ((self.state['x'] > dumping_zone[0][0] and self.state['x'] < dumping_zone[0][1])
+				and (self.state['y'] > dumping_zone[1][0] and self.state['y'] < dumping_zone[1][1])
 				and self.state['a'] is True
 				and self.state['m'] is False
 				and self.state['d'] is False
@@ -106,16 +110,16 @@ class RMT_SM(StateMachineBase):
 				return 4
 
 		elif self.curr_state == 4: # Transition from dump
-			if ((self.state['x'] > self.dumping_zone[0][0] and self.state['x'] < self.dumping_zone[0][1])
-				and (self.state['y'] > self.dumping_zone[1][0] and self.state['y'] < self.dumping_zone[1][1])
+			if ((self.state['x'] > dumping_zone[0][0] and self.state['x'] < dumping_zone[0][1])
+				and (self.state['y'] > dumping_zone[1][0] and self.state['y'] < dumping_zone[1][1])
 				and self.state['a'] is True
 				and self.state['m'] is False
 				and self.state['d'] is True
 				and self.state['f'] is True
 				and self.state['v'] is False):
 				return 4
-			elif ((self.state['x'] > self.dumping_zone[0][0] and self.state['x'] < self.dumping_zone[0][1])
-				and (self.state['y'] > self.dumping_zone[1][0] and self.state['y'] < self.dumping_zone[1][1])
+			elif ((self.state['x'] > dumping_zone[0][0] and self.state['x'] < dumping_zone[0][1])
+				and (self.state['y'] > dumping_zone[1][0] and self.state['y'] < dumping_zone[1][1])
 				and self.state['a'] is True
 				and self.state['m'] is False
 				and self.state['d'] is False
@@ -126,9 +130,9 @@ class RMT_SM(StateMachineBase):
 	def update_system_state(self): #update sys_state from localizer
 		pos=self.read_loc_pipe()
 		if pos is not None:
-			self.state['x']=pos[0][0][0]
-			self.state['y']=pos[0][1][0]
-			self.state['th']=pos[1][0][0]
+			self.state['x']=pos[0][0]
+			self.state['y']=pos[0][1]
+			self.state['th']=pos[1][0]
 
 	def run_SM(self): #master run loop
 		while True:
@@ -158,7 +162,9 @@ class RMT_SM(StateMachineBase):
 				sys.exit()
 
 class mv2mine(ActionStateBase): #move to mining position action state
-	mining_zone=[[10.0,10.0],[10.0,10.0]]
+
+
+
 	def __init__(self, pipe): #starts using the init function to a pipe listed to it super class
 		self.data = [0.0, 0.0]
 		super().__init__(pipe)
@@ -191,7 +197,7 @@ class mv2mine(ActionStateBase): #move to mining position action state
 		exit()
 
 	def select_target_zone(self): #select target pos from zone as np array, zone boundaries hard coded from reqs
-		return [self.mining_zone[0][0], self.mining_zone[1][1]]
+		return [mining_zone[0][0], mining_zone[1][1]]
 
 	def determine_path(self): #Bezier Curve Path Generator
 		self.path,self.dpath = Bez_Cur([self.state['x'], self.state['y']], self.target, ATTRACTOR,1)
@@ -234,7 +240,6 @@ class mine(ActionStateBase): #mining action state
 
 
 class mv2dump(ActionStateBase): #moving to dumping zone mining state
-	dumping_zone=[[15.5,15.5],[-10.0,-10.0]]
 	def __init__(self,pipe):
 		self.data = [0.0, 0.0]
 		super().__init__(pipe)
@@ -267,7 +272,7 @@ class mv2dump(ActionStateBase): #moving to dumping zone mining state
 		pass
 
 	def select_target_zone(self): #hard coded return point based on reqs
-		return [self.dumping_zone[0][0],self.dumping_zone[1][1]]
+		return [dumping_zone[0][0],dumping_zone[1][1]]
 
 	def determine_path(self): #Bezier curve path generator
 		self.path,self.dpath = Bez_Cur([self.state['x'], self.state['y']], self.target, ATTRACTOR,1)
