@@ -208,6 +208,7 @@ class mv2mine(ActionStateBase): #move to mining position action state
 		self.vel = np.array([0.0,0.0])
 		self.pos_diff_norm = np.linalg.norm(self.np_pos[:-2] - self.target)
 		while self.pos_diff_norm > PATH_TOL:
+			self.pipe_value({'v':True})
 			self.set_data(GLPDC(self.path, self.dpath, self.np_pos, self.vel, 0))
 			self.state = self.get_state()
 			self.vel = np.array([self.state['x'],self.state['y']])-self.np_pos[:-2]
