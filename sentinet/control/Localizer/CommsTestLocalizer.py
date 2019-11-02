@@ -46,11 +46,10 @@ class DummyLocalizer(LocalizerBase):
 	def run_localizer(self):
 		while True:
 			try:
-				if self.read_pipe():
+				if self.read_pipe() == 'fin':
 					self.end_localizer()
 					exit()
 				else:
-					self.pipe_value([self.position, self.ang_position])
 					self.filter()
 			except KeyboardInterrupt:
 				exit()

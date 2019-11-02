@@ -27,12 +27,8 @@ class LocalizerBase(ABC):
 			sensor.quit_sensor()
 
 	def read_pipe(self): #helper function to read pipe in a non-blocking way
-		
-		#if self.pipe.poll():
 		print('Loc Reading')
 		return self.pipe.recv()
-#		else:
-#			return None
 
 	@abstractmethod
 	def run_localizer(self):

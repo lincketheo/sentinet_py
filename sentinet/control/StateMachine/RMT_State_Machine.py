@@ -139,9 +139,10 @@ class RMT_SM(StateMachineBase):
 				if pipe_check is not None:
 					keys=pipe_check.keys()
 					if 'fin' in keys:
-						self.end_localizer()
+						self.pipe_localizer('fin')
 						exit()
 					else:
+						self.pipe_localizer('cont')
 						for key in keys:
 							self.state[key]=pipe_check[key]
 				new_state=self.state_list[self.transition_law()]
