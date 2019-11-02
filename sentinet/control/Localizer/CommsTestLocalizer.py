@@ -75,9 +75,9 @@ class DummySensor(SensorBase):
 	# @brief Assignes content and information for the sensor storing the sensors infromation in itself. Protecting information by locking it	
 	def callback(self, throttle: float, turn_ratio: float):
 		try:
-			#Lock.acquire()
+			Lock.acquire()
 			self.data = self.sensor_model(throttle, turn_ratio)
-			#Lock.release()
+			Lock.release()
 		except KeyboardInterrupt:
 			exit()
 		return
