@@ -40,7 +40,7 @@ class DummyLocalizer(LocalizerBase):
 				self.ang_velocity = np.array([np.pi*turn_ratio*turn_gain, 0, 0])
 				self.position += np.array([self.velocity[0]*time_step, self.velocity[1]*time_step, self.velocity[2]*time_step])
 				self.ang_position += np.array([self.ang_velocity[0]*time_step, self.ang_velocity[1]*time_step, self.ang_velocity[2]*time_step])
-		print(self.position)
+		print('integrated pos is:', self.position)
 		self.pipe_value([self.position, self.ang_position])
 
 	def run_localizer(self):

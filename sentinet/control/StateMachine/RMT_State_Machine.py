@@ -424,7 +424,7 @@ def GLPDC(path,pHeadings,position,velocity,backwards):
 		throttle=0.0
 	else:
 		turn_ratio=h_dev/np.pi*(-1)**backwards
-
+	print('throttle, turn',throttle, turn_ratio)
 	return [float(throttle), float(turn_ratio)]
 
 
