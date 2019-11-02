@@ -11,3 +11,4 @@ if __name__ == '__main__':
 	init_state = [0, 0, 0, False, False, False, False, False, True]
 	RMT_SM(alphabet, state_list, tmax, localizer, sensor, init_state=init_state)
 
+

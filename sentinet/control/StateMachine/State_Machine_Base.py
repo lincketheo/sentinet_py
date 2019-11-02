@@ -1,11 +1,12 @@
 from multiprocessing import Process, Pipe
-from time import time
+from time import time, sleep
 from abc import ABC, abstractmethod
 from sentinet.core.control.ControlClient import ControlClient
 
 class ActionStateBase(ABC):
 	def __init__(self, pipe): #initialize action state with comm pipe to state machine
 		self.pipe = pipe
+		print('starting state')
 		while self.get_state() is None:
 			self.get_state()
 		self.init_control_module()
@@ -17,7 +18,9 @@ class ActionStateBase(ABC):
 		return self.data
 
 	def get_state(self): #get system state from state machine
+		
 		if self.pipe.poll():
+			print('Action Reading')
 			return self.pipe.recv()
 		else:
 			return None
@@ -74,24 +77,30 @@ class StateMachineBase(ABC):
 	def execute_state(self,state): #set up action state with communication pipe
 		machine_conn, state_conn=Pipe()
 		self.pipe = machine_conn
-		s=Process(target=state,args=(state_conn,))
-		s.start()
+		self.state=Process(target=state,args=(state_conn,))
+		self.state.start()
+		self.pipe_state()
+		sleep(0.05)
 
 	def start_localizer(self, localizer, sensors):
 		machine_conn, loc_conn = Pipe()
 		self.loc_pipe = machine_conn
-		s=Process(target=localizer, args=(loc_conn, sensors))
-		s.start()
-		print(s.is_alive())
+		self.loc=Process(target=localizer, args=(loc_conn, sensors))
+		self.loc.start()
+		sleep(0.05)
 
 	def read_pipe(self): #helper function to read pipe in a non-blocking way
+		
 		if self.pipe.poll():
+			print('Machine Reading Action')
 			return self.pipe.recv()
 		else:
 			return None
 
 	def read_loc_pipe(self):
+		
 		if self.loc_pipe.poll():
+			print('Machine Reading Loc')
 			return self.loc_pipe.recv()
 		else:
 			return None
@@ -100,4 +109,5 @@ class StateMachineBase(ABC):
 		self.loc_pipe.send('fin')
 
 	def pipe_state(self): #send system state to action state
+		print('Machine Sending')
 		self.pipe.send(self.state)

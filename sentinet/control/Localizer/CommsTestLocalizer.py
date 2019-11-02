@@ -39,16 +39,18 @@ class DummyLocalizer(LocalizerBase):
 				self.position += np.array([self.velocity[0]*time_step, self.velocity[1]*time_step, self.velocity[2]*time_step])
 				self.ang_position += np.array([self.ang_velocity[0]*time_step, self.ang_velocity[1]*time_step, self.ang_velocity[2]*time_step])
 
-		print(self.position)
 		self.pipe_value([self.position, self.ang_position])
 
 	def run_localizer(self):
 		while True:
-			if self.read_pipe():
-				self.end_localizer()
+			try:
+				if self.read_pipe():
+					self.end_localizer()
+					exit()
+				else:
+					self.filter()
+			except KeyboardInterrupt:
 				exit()
-			else:
-				self.filter()
 	
 	def dynamics_model(self):
 		return 0
@@ -68,9 +70,13 @@ class DummySensor(SensorBase):
 	
 	# @brief Assignes content and information for the sensor storing the sensors infromation in itself. Protecting information by locking it	
 	def callback(self, throttle: float, turn_ratio: float):
-		Lock.acquire()
-		self.data = self.sensor_model(throttle, turn_ratio)
-		Lock.release()
+		try:
+			Lock.acquire()
+			self.data = self.sensor_model(throttle, turn_ratio)
+			Lock.release()
+		except KeyboardInterrupt:
+			exit()
+		return
 	
 	# @brief Returns the infromation inside the sensor.
 	def sensor_model(self, throttle, turn_ratio):

@@ -5,6 +5,7 @@ import numpy as np
 import math
 from multiprocessing import Process, Pipe
 from time import time, sleep
+import sys
 
 DISCRETIZATION_SIZE=100
 ATTRACTOR=[0,0]
@@ -133,23 +134,28 @@ class RMT_SM(StateMachineBase):
 
 	def run_SM(self): #master run loop
 		while True:
-			self.update_system_state()
-			pipe_check=self.read_pipe()
-			if pipe_check is not None:
-				keys=pipe_check.keys()
-				if 'fin' in keys:
-					self.end_localizer()
-					exit()
+			try:
+				self.update_system_state()
+				pipe_check=self.read_pipe()
+				if pipe_check is not None:
+					keys=pipe_check.keys()
+					if 'fin' in keys:
+						self.end_localizer()
+						exit()
+					else:
+						for key in keys:
+							self.state[key]=pipe_check[key]
+				new_state=self.transition_law()
+				if new_state==self.curr_state:
+					self.pipe_state()
 				else:
-					for key in keys:
-						self.state[key]=pipe_check[key]
-			new_state=self.transition_law()
-			if new_state==self.curr_state:
-				self.pipe_state()
-			else:
-				self.curr_state=new_state
-				self.execute_state(self.curr_state)
-				self.pipe_state()
+					self.curr_state=new_state
+					self.execute_state(self.curr_state)
+					self.pipe_state()
+			except KeyboardInterrupt:
+				self.loc.join()
+				self.state.join()
+				sys.exit()
 
 class mv2mine(ActionStateBase): #move to mining position action state
 	def __init__(self, pipe): #starts using the init function to a pipe listed to it super class
@@ -312,9 +318,12 @@ class init_state(ActionStateBase): #initialization state
 		self.ControlModule.request(1)
 
 	def execute(self):
-		self.cam_requester()
-		self.pipe_value({'a': True})
-		self.end_state()
+		try:
+			self.cam_requester()
+			self.pipe_value({'a': True})
+			self.end_state()
+		except KeyboardInterrupt:
+			exit()
 
 	def end_state(self):
 		self.ControlModule.quit_kermit()
