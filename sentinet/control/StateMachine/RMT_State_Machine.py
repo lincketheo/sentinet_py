@@ -166,7 +166,7 @@ class mv2mine(ActionStateBase): #move to mining position action state
 	def init_control_module(self): #add dynamic mapping reciever here
 		self.ControlModule = KermitControlModule(publishing=True)
 		self.ControlModule.set_cmd_vel_get_data(self.cmd_vel_callback)
-		self.ControlModule.set_data_callback(self.mapping_callback)
+		#self.ControlModule.set_data_callback(self.mapping_callback)
 		self.ControlModule.start_kermit()
 
 	def cmd_vel_callback(self):
@@ -252,7 +252,7 @@ class mv2dump(ActionStateBase): #moving to dumping zone mining state
 	def init_control_module(self): #add dynamic mapping reciever here
 		self.ControlModule = KermitControlModule(publishing=True)
 		self.ControlModule.set_cmd_vel_get_data(self.cmd_vel_callback)
-		self.ControlModule.set_data_callback(self.mapping_callback)
+		#self.ControlModule.set_data_callback(self.mapping_callback)
 		self.ControlModule.start_kermit()
 
 	def cmd_vel_callback(self):
