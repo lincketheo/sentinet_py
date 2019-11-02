@@ -4,7 +4,7 @@ import threading
 import signal
 import sys
 
-POLLER_TIMEOUT = 3000 # milliseconds
+POLLER_TIMEOUT = -1 # milliseconds
 REQUEST_RETRIES = 3
 
 def get_data_default():

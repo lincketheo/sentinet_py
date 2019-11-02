@@ -136,7 +136,8 @@ class RMT_SM(StateMachineBase):
 		while True:
 			try:
 				self.update_system_state()
-				pipe_check=self.read_pipe()
+				if self.action_state.is_alive:
+					pipe_check=None#self.read_pipe()
 				if pipe_check is not None:
 					keys=pipe_check.keys()
 					if 'fin' in keys:
@@ -154,7 +155,7 @@ class RMT_SM(StateMachineBase):
 					self.pipe_state()
 			except KeyboardInterrupt:
 				self.loc.join()
-				self.state.join()
+				self.action_state.join()
 				sys.exit()
 
 class mv2mine(ActionStateBase): #move to mining position action state
@@ -309,23 +310,28 @@ class dump(ActionStateBase): #Class for the to dump state.
 class init_state(ActionStateBase): #initialization state
 	def __init__(self,pipe): #initializes the initializer
 		super().__init__(pipe)
+		print('init')
 	
 	def init_control_module(self):
 		self.ControlModule = KermitControlModule(requesting=True)
 		self.ControlModule.start_kermit()
 
 	def cam_requester(self):
-		self.ControlModule.request(1)
+		#self.ControlModule.request(1)
+		return
 
 	def execute(self):
 		try:
 			self.cam_requester()
 			self.pipe_value({'a': True})
+			sleep(1)
 			self.end_state()
 		except KeyboardInterrupt:
+			print('caught by state')
 			exit()
 
 	def end_state(self):
+		print('end init')
 		self.ControlModule.quit_kermit()
 		exit()
 

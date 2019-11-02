@@ -2,13 +2,15 @@ from multiprocessing import Process, Pipe
 from time import time, sleep
 from abc import ABC, abstractmethod
 from sentinet.core.control.ControlClient import ControlClient
+from copy import deepcopy
 
 class ActionStateBase(ABC):
 	def __init__(self, pipe): #initialize action state with comm pipe to state machine
 		self.pipe = pipe
 		print('starting state')
-		while self.get_state() is None:
-			self.get_state()
+		self.state = self.get_state()
+		while self.state is None:
+			self.state = self.get_state()
 		self.init_control_module()
 
 	def set_data(self, data):
@@ -77,17 +79,17 @@ class StateMachineBase(ABC):
 	def execute_state(self,state): #set up action state with communication pipe
 		machine_conn, state_conn=Pipe()
 		self.pipe = machine_conn
-		self.state=Process(target=state,args=(state_conn,))
-		self.state.start()
+		self.action_state=Process(target=state,args=(state_conn,))
+		self.action_state.start()
 		self.pipe_state()
-		sleep(0.05)
+		sleep(1)
 
 	def start_localizer(self, localizer, sensors):
 		machine_conn, loc_conn = Pipe()
 		self.loc_pipe = machine_conn
 		self.loc=Process(target=localizer, args=(loc_conn, sensors))
 		self.loc.start()
-		sleep(0.05)
+		sleep(1)
 
 	def read_pipe(self): #helper function to read pipe in a non-blocking way
 		
@@ -110,4 +112,4 @@ class StateMachineBase(ABC):
 
 	def pipe_state(self): #send system state to action state
 		print('Machine Sending')
-		self.pipe.send(self.state)
+		self.pipe.send(deepcopy(self.state))

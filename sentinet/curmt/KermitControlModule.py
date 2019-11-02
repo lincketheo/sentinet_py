@@ -91,7 +91,7 @@ class KermitControlModule:
 
     # func gets two floats and returns void
 
-    def __data_callback(self, incomming_message):
+    def _data_callback(self, incomming_message):
         a = struct.unpack('f', self.data_msg.get_data(0))[0]
         b = struct.unpack('f', self.data_msg.get_data(1))[0]
         print(self.data_msg.message)
@@ -110,7 +110,7 @@ class KermitControlModule:
         # Connect to address
         self.data.address = DATA_ADDR
         # Attach callback, takes in a string, needs a wrapper function
-        self.data.callback = self.data_callback_
+        self.data.callback = self._data_callback
         # Attach the data topic
         self.data.topic = "data"
         # Start on creation

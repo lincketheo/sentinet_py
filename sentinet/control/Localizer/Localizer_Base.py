@@ -7,6 +7,7 @@ import numpy as np
 
 class LocalizerBase(ABC):
 	def __init__(self, pipe, sensors):
+		print('starting loc')
 		self.pipe = pipe
 		self.sensors = sensors
 		self.position = np.full((3,1),None)

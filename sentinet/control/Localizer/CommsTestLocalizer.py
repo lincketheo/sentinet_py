@@ -24,6 +24,7 @@ class DummyLocalizer(LocalizerBase):
 			self.ang_position.fill(0)
 		if None in self.ang_velocity:
 			self.ang_velocity.fill(0)
+		self.pipe_value([self.position, self.ang_position])
 		self.run_localizer()
 			
 	# @brief Stores data for the localizer for passing to the pipe.
@@ -48,6 +49,7 @@ class DummyLocalizer(LocalizerBase):
 					self.end_localizer()
 					exit()
 				else:
+					self.pipe_value([self.position, self.ang_position])
 					self.filter()
 			except KeyboardInterrupt:
 				exit()
@@ -71,9 +73,9 @@ class DummySensor(SensorBase):
 	# @brief Assignes content and information for the sensor storing the sensors infromation in itself. Protecting information by locking it	
 	def callback(self, throttle: float, turn_ratio: float):
 		try:
-			Lock.acquire()
+			#Lock.acquire()
 			self.data = self.sensor_model(throttle, turn_ratio)
-			Lock.release()
+			#Lock.release()
 		except KeyboardInterrupt:
 			exit()
 		return
