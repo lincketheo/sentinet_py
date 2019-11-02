@@ -149,12 +149,12 @@ class RMT_SM(StateMachineBase):
 						self.pipe_localizer('cont')
 						for key in keys:
 							self.state[key]=pipe_check[key]
-				new_state=self.state_list[self.transition_law()]
+				new_state=self.transition_law()
 				if new_state==self.curr_state:
 					self.pipe_state()
 				else:
 					self.curr_state=new_state
-					self.execute_state(self.curr_state)
+					self.execute_state(self.state_list[self.curr_state])
 					self.pipe_state()
 			except KeyboardInterrupt:
 				self.loc.join()
