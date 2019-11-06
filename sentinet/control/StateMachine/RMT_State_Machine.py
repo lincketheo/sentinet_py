@@ -9,7 +9,7 @@ import sys
 
 DISCRETIZATION_SIZE=100
 ATTRACTOR=[0,0]
-PATH_TOL=0.05 #meters
+PATH_TOL=0.15 #meters
 CHECKSUM="CHECKSUM"
 mining_zone=[[10.0,20.0],[10.0,20.0]]
 dumping_zone=[[5.5,25.5],[-10.0,-20.0]]
@@ -352,7 +352,7 @@ class soft_exit(ActionStateBase): #planned soft exit state
 		self.ControlModule.request(8,1<<1,1<<1)
 
 	def kill_requester(self):
-		self.ControlModule.request(8,1)
+		self.ControlModule.request(8,1,1)
 
 	def execute(self):
 		sleep(0.05)
@@ -366,12 +366,12 @@ class soft_exit(ActionStateBase): #planned soft exit state
 		self.end_state()
 
 	def cmd_vel_callback(self):
-		return 0, 0
+		return 0.0, 0.0
 
 	def init_control_module(self):
 		self.ControlModule = KermitControlModule(requesting=True, publishing=True)
 		self.ControlModule.set_cmd_vel_get_data(self.cmd_vel_callback)
-		self.start_kermit()
+		self.ControlModule.start_kermit()
 
 	def end_state(self):
 		self.ControlModule.quit_kermit()
@@ -432,7 +432,7 @@ def GLPDC(path,pHeadings,position,velocity,backwards):
 		throttle=0.0
 	else:
 		turn_ratio=h_dev/np.pi*(-1)**backwards
-	print('throttle, turn',throttle, turn_ratio)
+	#  print('throttle, turn',throttle, turn_ratio)
 	return [float(throttle), float(turn_ratio)]
 
 

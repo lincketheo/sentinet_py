@@ -4,8 +4,8 @@ from sentinet.curmt import KermitControlModule
 import numpy as np
 
 # Some default variables for function calls.
-turn_gain = 0.005
-drive_gain = 0.005
+turn_gain = 0.015
+drive_gain = 0.015
 time_step = 1.0
 
 
@@ -75,7 +75,7 @@ class DummySensor(SensorBase):
 	# @brief Assignes content and information for the sensor storing the sensors infromation in itself. Protecting information by locking it	
 	def callback(self, throttle: float, turn_ratio: float):
 		try:
-			print(throttle,turn_ratio)
+                        #  print(throttle,turn_ratio)
 			self.lock.acquire()
 			self.data = self.sensor_model(throttle, turn_ratio)
 			self.lock.release()
