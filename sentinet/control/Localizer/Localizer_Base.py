@@ -61,3 +61,34 @@ class SensorBase(ABC): #Template for a sensor
 	@abstractmethod
 	def sensor_model(self):
 		pass
+	
+class ImuSensor(SensorBase)
+	def __init__(self, pos):
+		self.x_acc=0
+		self.y_acc=0
+		self.angle_acc=0
+		self.pos=pos
+		self.lock = Lock()
+		self.ControlModule = KermitControlModule(requesting=True)
+		self.ControlModule.set_data_callback(self.callback)
+	
+	def start_sensor(self):
+		self.ControlModule.start_kermit()
+
+	def quit_sensor(self):
+		self.ControlModule_quit.kermit()
+		
+	def get_data(self):
+		return 
+
+	def callback(self, x: float, y: float, angle):
+		p
+	
+	def sensor_model(self):
+		pass
+	def start_sensor()
+...
+self.data_callback_ataxgs( x float, y float, y_angle float)
+self.data_callback_imu(x_acc float, y_acc float, y_angle_acc float)
+...
+	
