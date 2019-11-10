@@ -92,10 +92,10 @@ if __name__ == '__main__':
     # Do work, or loop or whatever
     # This updates the robot and sends 
     # lin and ang
-    #  for i in range(1000):
-    #      a.lin = random.random() * 30
-    #      a.ang = random.random() * 30
-    #      time.sleep(5)
+    for i in range(1000):
+        a.lin = random.random() * 30
+        a.ang = random.random() * 30
+        time.sleep(2)
 
     a.lin = 0.0
     a.ang = 0.0
