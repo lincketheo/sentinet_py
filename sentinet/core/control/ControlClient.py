@@ -81,7 +81,6 @@ class ThreadSpace(threading.Thread):
     ##
     # @brief Stop the thread
     def stop(self):
-        print("Here")
         self.lock.acquire()
         self.exit_signal.set()
         self.lock.release()

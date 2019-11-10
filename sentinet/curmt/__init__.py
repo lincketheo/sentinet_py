@@ -1,1 +1,2 @@
 from sentinet.curmt.KermitControlModule import KermitControlModule
+from sentinet.curmt.ExampleControlModule import ExampleControlExtension, Driver

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3 
+
 import sys
 from struct import pack
 from sentinet.curmt import KermitControlModule
@@ -82,6 +83,23 @@ class ExampleControlExtension:
     # Expects two floats for now
     def cmd_vel_get_data(self):
         return self.lin, self.ang
+
+class Driver(ExampleControlExtension):
+    def __init__(self):
+        ExampleControlExtension.__init__(self)
+
+    def begin(self):
+        self.start()
+
+    def end(self):
+        time.sleep(2)
+        self.stop()
+
+    def forward(self, val):
+        self.lin = float(val)
+
+    def turn(self, val):
+        self.ang = float(val)
 
 
 if __name__ == '__main__':
