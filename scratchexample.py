@@ -12,7 +12,7 @@ if __name__ == '__main__':
     a.forward(30.0)
     a.turn(0.0)
     print("Moving forwards")
-    time.sleep(3)
+    time.sleep(7)
 
     a.forward(0.0)
     a.turn(30.0)
@@ -20,7 +20,7 @@ if __name__ == '__main__':
     time.sleep(3)
 
     a.forward(30.0)
-    a.turn(0.0)
+    a.turn(6.0)
     print("Moving forward and turning")
     time.sleep(3)
 
@@ -29,4 +29,4 @@ if __name__ == '__main__':
     a.turn(0.0)
     print("Stopping")
 
-    a.stop()
+    a.end()
