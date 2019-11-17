@@ -67,7 +67,7 @@ class SensorBase(ABC):  # Template for a sensor
 # Viable?
 # Useful when april tags not visible
 # Maybe reset every n seconds using april tags
-	
+
 # Geometric point offset in actual sensor classes, not localizer
 # Individual instances for each imu
 
@@ -90,6 +90,7 @@ class ImuSensor(SensorBase):
     # Theo and Chris: talk to about spinning up sensors, as well as information
 	# Figure out how to differentiate instances
     # rate of update?
+    # Clock Time Ideas?
     def start_sensor(self):
         self.ControlModule.start_kermit()
 
@@ -99,15 +100,28 @@ class ImuSensor(SensorBase):
     def get_data(self):
         return self.data
 
-    def callback(self, x_acc, y_acc, angle_acc):
-		self.data[x_acc] = x_acc
-        self.data[y_acc] = y_acc
-        self.data[angle_acc] = angle_acc
-		sensor_model()
+    def callback(self, x_acc: float, y_acc: float, theta_acc: float):
+		try:
+            #   Print python timestamp
+			self.lock.acquire()
+			self.data = self.sensor_model(x_acc, y_acc, theta_acc)
+			self.lock.release()
+		except KeyboardInterrupt:
+			exit()
+		return
 
 	# integrate to get velocity
-    def sensor_model(self):
-        pass
+    def sensor_model(self, x_acc: float, y_acc: float, theta_acc: float):
+        # integrate velocity
+        # x_vel = 
+        # y_vel =  
+        return {
+            "x_acc": x_acc,
+			"y_acc": y_acc,
+            "theta_acc": theta_acc,
+            "x_vel": x_vel,
+            "y_vel": y_vel,
+            }
 
 
 # Getting x, y, theta data
@@ -116,7 +130,9 @@ class AprilTags(SensorBase):
         self.data = {
             "x_pos": x_pos or 0,
             "y_pos": y_pos or 0,
-            "heading": heading or 0
+            "heading": heading or 0,
+            "x_vel": 0,
+            "y_vel": 0
         }
         self.x_offset = x_offset
         self.y_offset = y_offset
@@ -131,8 +147,7 @@ class AprilTags(SensorBase):
         t = tf2_ros.BufferCore(rospy.Duration(1))
     	tfBuffer = tf2_ros.Buffer()
     	listener = tf2_ros.TransformListener(tfBuffer)
-
-       self.ControlModule.start_kermit()
+        self.ControlModule.start_kermit()
 
     def quit_sensor(self):
         self.ControlModule_quit.kermit()
@@ -140,15 +155,29 @@ class AprilTags(SensorBase):
     def get_data(self):
         return self.data
 
-    def callback(self, x_pos, y_pos, heading):
-        self.data[x_pos] = x_pos
-        self.data[y_pos] = y_pos
-        self.data[heading] = heading
-		sensor_model()
+    def callback(self, x_pos: float, y_pos: float, heading: float):
+        try:
+            #   Print python timestamp
+			self.lock.acquire()
+			self.data = self.sensor_model(x_pos, y_pos, heading)
+			self.lock.release()
+		except KeyboardInterrupt:
+			exit()
+		return
 
 	# derive velocity
-    def sensor_model(self):
-        pass
+    # x and y or just robots linear velocity + angular velocity
+    def sensor_model(self, x_pos: float, y_pos: float, heading: float):
+        # time step/change in position
+        # x_vel = 
+        # y_vel = 
+        return {
+            "x_pos": x_pos,
+            "y_pos": y_pos,
+            "heading": heading,
+            "x_vel": x_vel,
+            "y_vel": y_vel
+        }
 
 # All communication running on publisher/subscriber model
 # Common filter to combine velocities in localizer
