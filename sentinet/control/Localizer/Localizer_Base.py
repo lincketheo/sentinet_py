@@ -2,6 +2,7 @@ from multiprocessing import Pipe
 from abc import ABC, abstractmethod
 from sentinet.curmt import KermitControlModule
 import numpy as np
+import time
 
 # Template for localizers
 
@@ -132,11 +133,13 @@ class AprilTags(SensorBase):
             "y_pos": y_pos or 0,
             "heading": heading or 0,
             "x_vel": 0,
-            "y_vel": 0
+            "y_vel": 0,
+			"ang_vel":0
         }
         self.x_offset = x_offset
         self.y_offset = y_offset
         self.lock = Lock()
+		self.time = time.time()
         self.ControlModule = KermitControlModule(requesting=True)
         self.ControlModule.set_data_callback(self.callback)
 
@@ -168,15 +171,20 @@ class AprilTags(SensorBase):
 	# derive velocity
     # x and y or just robots linear velocity + angular velocity
     def sensor_model(self, x_pos: float, y_pos: float, heading: float):
-        # time step/change in position
-        # x_vel = 
-        # y_vel = 
+        time=self.time()
+		delta_x = x_pos - self.x_pos
+		delta_y = y_pos - self.y_pos
+		delta_t = time.time()-self.time
+        x_vel = delta_x / delta_t 
+        y_vel = delta_y / delta_t 
+		ang_vel = atan2(delta_x,delta_y)/delta_t
         return {
             "x_pos": x_pos,
             "y_pos": y_pos,
             "heading": heading,
             "x_vel": x_vel,
-            "y_vel": y_vel
+            "y_vel": y_vel,
+			"ang_vel": ang_vel
         }
 
 # All communication running on publisher/subscriber model
