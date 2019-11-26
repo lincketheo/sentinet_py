@@ -1,16 +1,12 @@
-#!/usr/bin/env python3 
-
 import sys
 from struct import pack
 from sentinet.curmt import KermitControlModule
 import time
 import random
 
-"""
-This is an example implimentation of Kermit Control Module
 
-Kermit Control Module is an extension of the control client
-The main thing to remember is to set callbacks 
+"""
+A Place for tests / modules that are specific to Kermit
 """
 class ExampleControlExtension:
 
@@ -100,6 +96,8 @@ class Driver(ExampleControlExtension):
 
     def turn(self, val):
         self.ang = float(val)
+
+
 
 
 if __name__ == '__main__':

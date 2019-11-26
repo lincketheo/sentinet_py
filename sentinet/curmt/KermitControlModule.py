@@ -3,10 +3,10 @@ from sentinet.core.messages.Message import Data_Message, Ping_Message
 from sentinet.core.messages.MessageKeys import *
 from struct import pack
 
-CMD_VEL = "tcp://localhost:5570"
-DATA_ADDR = "tcp://localhost:5556"
-COMMAND_ADDR = "tcp://localhost:5572"
-REAL_TIME_ADDR = "tcp://localhost:5573"
+CMD_VEL = "tcp://10.201.50.235:5570"
+DATA_ADDR = "tcp://10.201.50.235:5556"
+COMMAND_ADDR = "tcp://10.201.50.235:5572"
+REAL_TIME_ADDR = "tcp://10.201.50.235:5573"
 
 class KermitControlModule:
 
@@ -35,6 +35,8 @@ class KermitControlModule:
         self.data_callback = None
 
         self.command = None
+
+
     #  Checks to see if the requester is set to pass otherwise prints an error message.
     def __request(self, message):
         if not self.requesting:
@@ -42,12 +44,14 @@ class KermitControlModule:
             return "" 
         return self.control.request_concurrent(COMMAND_ADDR, message)
 
+    # Requests on the control line
     def request(self, head: int, code: int, excess: int):
         self.command_data.set_type(head)
         self.command_data.set_code(code)
         self.command_data.set_excess(excess)
         return self.__request(bytes(self.command_data.message))
 
+    # Start running kermit
     def start_kermit(self):
         # Start control module
         self.control = ControlClient(self.requesting, (False, ""))
@@ -56,9 +60,11 @@ class KermitControlModule:
         # Start publisher module if implimented
         self.control.spin_publisher(self.cmd_vel) if self.cmd_vel is not None else print("Cmd vel not implimented")
         
+
     # Stop kermit
     def quit_kermit(self):
         self.control.quit()
+
 
     def __cmd_vel_get_data(self):
         a, l = self.cmd_vel_callback()
@@ -66,6 +72,18 @@ class KermitControlModule:
         self.cmd_vel_data.set_data(l, 4, FLOAT, 1)
         return bytes(self.cmd_vel_data.message)
 
+    # Sets the callback to command velocity callback
+    """
+    Expects a function that returns two floats for 
+    the instantaneous speed
+
+    example:
+
+    def command_vel_callback():
+        return 4.5, 6.7
+
+    where angular is 4.5 and linear is 6.7
+    """
     def set_cmd_vel_get_data(self, func):
         # Initialize message space
         self.cmd_vel_data = Data_Message()
@@ -89,30 +107,43 @@ class KermitControlModule:
         # The start on creation
         self.cmd_vel.start_on_creation = True 
 
-    # func gets two floats and returns void
-
-
+    # Callback to recieved data
     def data_callback_(self, incomming_message):
-        self.data_msg.parse_from_similar_message(incomming_message)
-        a = struct.unpack('f', self.data_msg.get_data(0))[0]
-        b = struct.unpack('f', self.data_msg.get_data(1))[0]
-        self.data_callback(float(a), float(b))
+        if(self.data_msg.parse_from_similar_message(incomming_message)):
+            a = struct.unpack('f', self.data_msg.get_data(0))[0]
+            b = struct.unpack('f', self.data_msg.get_data(1))[0]
+            c = struct.unpack('f', self.data_msg.get_data(2))[0]
+            self.data_callback(float(a), float(b), float(c))
+        else:
+            print("Error, invalid message recieved")
+            self.data_callback(0.0, 0.0, 0.0)
 
+
+    # Does something to the recieved data
+    """
+    Expects a function that takes in a float, float, float
+
+    example:
+
+    def callback(x_accel : float, y_accel : foat, theta_accel: float):
+        do stuff
+        return
+    """
     def set_data_callback(self, func):
         self.data_msg = Data_Message()
+
+        # Initializes the format of the recieved data message
+        self.data_msg.push_data(0.0, 4, FLOAT)
         self.data_msg.push_data(0.0, 4, FLOAT)
         self.data_msg.push_data(0.0, 4, FLOAT)
 
-        # Nothing to do with CC
+        # Set the callback function to the function passed
         self.data_callback = func
 
-        # Create a new sub params
+        # Create a new sub params using the 
+        # control client param setup method
         self.data = sub_params()
-        # Connect to address
         self.data.address = DATA_ADDR
-        # Attach callback, takes in a string, needs a wrapper function
         self.data.callback = self.data_callback_
-        # Attach the data topic
         self.data.topic = "data"
-        # Start on creation
         self.data.start_on_creation = True
