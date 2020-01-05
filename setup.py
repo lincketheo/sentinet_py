@@ -4,6 +4,7 @@ from setuptools import setup, find_packages
 
 import os
 
+
 setup( 
         name='sentinet',
         version='1.0.0',
@@ -11,7 +12,7 @@ setup(
         author="Trace Valade",
         author_email="trace.valade@colorado.edu",
         license='MIT',
-        packages=[package for package in find_packages() if package.startswith('sentinet')],
+        packages=find_packages(),
         install_requires=[
             'numpy',
             'pyzmq',
@@ -20,7 +21,7 @@ setup(
         classifiers=[
             'Development Status :: 1 - Planning',
             'Intended Audience :: Science/Research',
-            'License :: OSI Approved :: MIT License',
+            'License :: MIT License',
             'Operating System :: POSIX :: Linux',
             'Programming Language :: Python :: 3',
             'Programming Language :: Python :: 3.4',

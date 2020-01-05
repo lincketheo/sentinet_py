@@ -11,7 +11,7 @@ PING = 2
 
 # Initialized constants
 EMPTY = 0 
-ENDIAN = 'big'
+ENDIAN = 'little'
   
 # Type codes
 INVALID = '\0'

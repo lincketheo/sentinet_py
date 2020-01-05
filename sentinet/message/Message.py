@@ -1,7 +1,8 @@
 import sys
 from struct import pack
-from sentinet.core.messages.MessageKeys import *
 import copy
+
+from sentinet.message.MessageKeys import *
 
 ##
 # @brief A Data Message that holds Data
@@ -229,8 +230,10 @@ class Data_Message:
 # Because it's one big header
 class Ping_Message:
     def __init__(self):
-        self.header_size = 15
+        self.header_size = 11
         self.message = bytearray(self.header_size)
+        self.set_protocol(1)
+        self.set_opcode(2)
 
     def set_protocol(self, value):
         self.message[0] = value

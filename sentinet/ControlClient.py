@@ -3,60 +3,26 @@ import time
 import threading
 import signal
 import sys
+from sentinet.common import *
 
 POLLER_TIMEOUT = 3000 # milliseconds
 REQUEST_RETRIES = 3
-
-def get_data_default():
-    return "default"
-
-def sub_default_callback(val):
-    print("Subscriber recieved " + val)
-
-def serve_default_callback(val):
-    print("server recieved val " + val)
-    return val + " response"
-
-def req_callback(val):
-    print("requester recieved val " + val)
-
-class pub_params:
-    def __init__(self):
-        self.address = "tcp://localhost:5555"
-        self.get_data = get_data_default
-        self.topic = "" 
-        self.period = 1
-        self.start_on_creation = True
-
-class sub_params:
-    def __init__(self):
-        self.address = "tcp://localhost:5556"
-        self.callback = sub_default_callback
-        self.topic = ""
-        self.start_on_creation = True
-
-class serve_params:
-    def __init__(self):
-        self.address = "tcp://localhost:5570"
-        self.callback = serve_default_callback
-        self.start_on_creation = True
-
-class req_params():
-    def __init__():
-        self.address = "tcp://localhost:5571"
-        self.get_data = get_data_default
-        self.callback = req_callback
-        self.start_on_creation = True
 
 ##
 # @brief A Space to maintain and stop threads with an override poll function
 class ThreadSpace(threading.Thread):
     ##
     # @brief A Thread space only needs an exit signal and a lock
-    def __init__(self):
+    def __init__(self, period, exit):
         super().__init__()
-        self.exit_signal = threading.Event()
+
+        # An event to kill the thread
+        self.exit_signal = exit
         self.lock = threading.Lock()
+        self.poll_period = period # seconds
+
+        # Threads will die when main process 
+        # exits if we forget to call event.set
         self.daemon = True
     
     ##
@@ -70,20 +36,11 @@ class ThreadSpace(threading.Thread):
     # @brief The actual thread function (an overriden function)
     # @return When exit signal is set
     def run(self):
-
-        while not self.exit_signal.isSet():
+        while not self.exit_signal.wait(self.poll_period):
             try:
                 self.poll()
             except (KeyboardInterrupt, SystemExit):
-                cleanup_stop_thread()
                 sys.exit()
-
-    ##
-    # @brief Stop the thread
-    def stop(self):
-        self.lock.acquire()
-        self.exit_signal.set()
-        self.lock.release()
 
 ##
 # @brief A Publisher thread space simply publishes every period
@@ -97,19 +54,12 @@ class PublisherThreadSpace(ThreadSpace):
     # @param topic The topic to publish to
     # @param get_data A callback that returns a byte string to publish
     # @param address The address to bind the publisher to 
-    def __init__(self, context, topic, get_data, address, period = 1): 
-        super().__init__()
+    def __init__(self, context, topic, get_data, address, exit, period = 1.0): 
+        super().__init__(period, exit)
         self.socket = context.socket(zmq.PUB)
-
-        self.period = period
-
         self.callback = get_data
-
         self.topic = topic
-
         self.sock_addr = address
-
-        print(address)
         self.socket.connect(address)
 
     ##
@@ -117,46 +67,6 @@ class PublisherThreadSpace(ThreadSpace):
     def poll(self):
         body = self.callback()
         self.socket.send_multipart([self.topic.encode('utf-8'), body])
-        time.sleep(self.period)
-
-
-##
-# @brief A Requesting thread space simply requests, once it gets the data, it waits period. I might change that
-class RequesterThreadSpace(ThreadSpace):
-
-    ##
-    # @brief Initialize a requester thread space
-    #
-    # @param context The "global" context to create sockets from
-    # @param period The period to wait after a request has been carried out
-    # @param get_data The callback to get the message to request
-    # @param recieve_request The callback to the recieved message
-    # @param address The address to connect to, this can be changed using set_address
-    def __init__(self, context, get_data, recieve_request, address, period = 1):
-        super().__init__()
-        self.socket = context.socket(zmq.REQ)
-        self.period = period
-
-        self.get_request = get_data
-        self.recieve_request = recieve_request
-
-        self.topic = topic
-        self.sock_addr = address
-        # Shouldn't connect if we do a concurrent request 
-        # TODO Important:
-        # I need to do a timing test to see if connecting every loop changes anything
-        self.socket.connect(self.sock_addr)
-
-    def poll(self):
-        self.socket.send_multipart([self.topic, self.get_request()])
-        ret = self.socket.recv_string()
-        self.recieve_request(ret)
-        time.sleep(self.period)
-
-    def set_address(self, address):
-        self.socket.disconnect(self.sock_addr)
-        self.sock_addr = address
-        self.socket.connect(self.sock_addr)
 
 
 ##
@@ -169,11 +79,9 @@ class ServerThreadSpace(ThreadSpace):
     # @param callback A Str (str) function that takes a string and returns a string to publish
     # @param address The address to bind to
     # @param period The period to check. This is normally ignored, I will do some unit tests
-    def __init__(self, context, callback, address, period = -1):
-        super().__init__()
+    def __init__(self, context, callback, address, exit, period = 1.0):
+        super().__init__(period, exit)
         self.socket = context.socket(zmq.REP)
-
-        self.period = period
 
         self.callback = callback
 
@@ -191,8 +99,37 @@ class ServerThreadSpace(ThreadSpace):
             message = self.socket.recv_string()
             val = self.callback(message)
             self.socket.send_string(val)
-        if self.period > 0:
-            time.sleep(self.period)
+
+##
+# @brief A Server thread that simply listens passively for client connections
+class ServerThreadSpaceBound(ThreadSpace):
+    ##
+    # @brief Initialize a server
+    #
+    # @param context The "global" context to create sockets from
+    # @param callback A Str (str) function that takes a string and returns a string to publish
+    # @param address The address to bind to
+    # @param period The period to check. This is normally ignored, I will do some unit tests
+    def __init__(self, context, callback, address, exit, period = 1.0):
+        super().__init__(period, exit)
+        self.socket = context.socket(zmq.REP)
+
+        self.callback = callback
+
+        self.sock_addr = address
+        self.socket.bind(address)
+        
+        self.poller = zmq.Poller()
+        self.poller.register(self.socket, zmq.POLLIN)
+
+    ##
+    # @brief Poll - simply scan all the sockets and check if we can get any data
+    def poll(self):
+        socks = dict(self.poller.poll(POLLER_TIMEOUT))
+        if self.socket in socks and socks[self.socket] == zmq.POLLIN:
+            message = self.socket.recv_string()
+            val = self.callback(message)
+            self.socket.send_string(val)
 
 ##
 # @brief A Subscriber thread is passive and listens to its socket so that it can execute a callback
@@ -205,16 +142,14 @@ class SubscriberThreadSpace(ThreadSpace):
     # @param callback The callback when a subscriber recieves a message
     # @param address The address to connect to
     # @param period The polling period, usually not set, will do some unit tests
-    def __init__(self, context, callback, address, topic="", period = -1):
-        super().__init__()
+    def __init__(self, context, callback, address, exit, topic="", period = 1.0):
+        super().__init__(period, exit)
         self.socket = context.socket(zmq.SUB)
 
-        self.period = period
         self.callback = callback
         self.topic = topic
         self.sock_addr = address
 
-        print(address)
         self.socket.connect(address)
         self.poller = zmq.Poller()
         self.poller.register(self.socket, zmq.POLLIN)
@@ -228,8 +163,6 @@ class SubscriberThreadSpace(ThreadSpace):
         if self.socket in socks and socks[self.socket] == zmq.POLLIN:
             topic, body = self.socket.recv_multipart()
             self.callback(body)
-        if self.period != -1:
-            time.sleep(self.period)
 
     ##
     # @brief Subscribe to a certain topic
@@ -247,15 +180,34 @@ class ControlClient:
     #
     # @param client If set to true, we have a concurrent requester
     # @param publisher If set to true, we have a concurrent publisher
-    def __init__(self, client = False, publisher = (True, "tcp://localhost:5555")):
+    def __init__(self, address_in):
         self.context = zmq.Context.instance()
-        self.init_self_publisher(publisher[0], publisher[1])
-        self.init_self_client(client)
+
+        # Initialize publisher and client
+        self.this_publisher = None
+        self.this_client = None
+
+        # Dicts of managed sockets
         self.publishers = {}
         self.requesters = {}
         self.servers = {}
         self.subscribers = {}
+
+        # Running
         self.active = False
+
+        # Common exit signal for all threads
+        self.exit_signal = threading.Event()
+
+        self.bound_server = ServerThreadSpaceBound(context = self.context, \
+                                                   callback = self.bound_server_callback, \
+                                                   address = address_in,  \
+                                                   exit = self.exit_signal,  \
+                                                   period = 0.1)
+        self.bound_server.start()
+
+    def bound_server_callback(self, val):
+        return val + "default"
 
     ##
     # @brief Starts all threads, a user can start individual threads, or just loop through and start all of them
@@ -277,22 +229,22 @@ class ControlClient:
     ##
     # @brief Stops all threads, a user can stop individual threads, or just loop through and stop all of them
     def quit(self):
+        # Notify threads to quit
+        self.exit_signal.set()
+
         for i in self.publishers.values():
             if i.is_alive():
-                i.stop()
                 i.join()
         for i in self.subscribers.values():
             if i.is_alive():
-                i.stop()
                 i.join()
         for i in self.servers.values():
             if i.is_alive():
-                i.stop()
                 i.join()
         for i in self.requesters.values():
             if i.is_alive():
-                i.stop()
                 i.join()
+
         self.active = False
 
     ##
@@ -300,19 +252,16 @@ class ControlClient:
     #
     # @param publisher The publisher to create a publisher with
     # @param address The address to bind to
-    def init_self_publisher(self, publisher, address):
-        if publisher:
-            self.this_publisher = self.context.socket(zmq.PUB)
-            self.this_publisher.connect(address)
-        else:
-            self.this_publisher = None
+    def init_self_publisher(self, address):
+        self.this_publisher = self.context.socket(zmq.PUB)
+        self.this_publisher.connect(address)
 
     ##
     # @brief Create a concurrent client in this thread 
     #
     # @param client The client to create in the thread 
-    def init_self_client(self, client):
-        self.this_client = self.context.socket(zmq.REQ) if client else None
+    def init_self_client(self):
+        self.this_client = self.context.socket(zmq.REQ)
 
     ##
     # @brief Publish concurrently 
@@ -323,7 +272,7 @@ class ControlClient:
         if self.this_publisher == None:
             print("Error, no concurrent publisher")
         else:
-            self.this_publisher.send_string("%d %d" % (topic, message))
+            self.this_publisher.send_multipart([topic.encode('utf-8'), message.encode('utf-8')])
 
     ##
     # @brief Request concurrently
@@ -385,16 +334,22 @@ class ControlClient:
                         client.connect(address)
                         poll.register(client, zmq.POLLIN)
                         client.send(request)
-            return "Error"
+            return "Error".encode('utf-8')
 
 
+    ##
+    # @brief Equivalent to spin()
+    #
+    # @param pub_params Publish parameters
     def spin_publisher(self, pub: pub_params):
-        self.publish(pub.address, pub.topic, pub.get_data, pub.period, pub.start_on_creation)
+        self.publish(pub.sock_addr, pub.topic, pub.get_data, pub.period, pub.start_on_creation)
+
     def publish(self, sock_addr, topic, get_data, period, start_on_creation=False):
         if sock_addr not in self.publishers:
             self.publishers[sock_addr] = PublisherThreadSpace(context = self.context,\
                                                                         period = period,\
                                                                         topic = topic,\
+                                                                        exit = self.exit_signal, \
                                                                         get_data = get_data, \
                                                                         address = sock_addr)
             if start_on_creation:
@@ -402,15 +357,14 @@ class ControlClient:
         else:
             print("Thread %s already in publishers" % (sock_addr))
 
-    def cancel_periodic_publisher(self, sock_addr):
-        if sock_addr in self.publishers:
-            if self.publishers[sock_addr].is_alive():
-                self.publishers[sock_addr].stop()
-        else:
-            print("%s does not exist" % (sock_addr))
 
+    
+    ##
+    # @brief Same as spin
+    #
+    # @param sub_params Subscriber parameters
     def spin_subscriber(self, sub: sub_params):
-        self.subscribe(sub.address, sub.topic, sub.callback, start_on_creation = sub.start_on_creation)
+        self.subscribe(sub.sock_addr, sub.topic, sub.callback, start_on_creation = sub.start_on_creation)
 
     def subscribe(self, sock_addr, topic, callback, period = -1, start_on_creation = False):
         if sock_addr not in self.subscribers:
@@ -418,57 +372,29 @@ class ControlClient:
                                                                 topic = topic, \
                                                                 callback = callback, \
                                                                 address = sock_addr, \
+                                                                exit = self.exit_signal, \
                                                                 period = period)
             if start_on_creation:
                 self.subscribers[sock_addr].start()
         else:
             print("%s already exists in subscriber map" % (sock_addr))
 
-    def cancel_periodic_subscriber(self, sock_addr):
-        if sock_addr in self.subscribers:
-            if self.subscribers[sock_addr].is_alive():
-                self.subscribers[sock_addr].stop()
-        else:
-            print("%s does not exist" % (sock_addr))
 
-    def spin_requester(self, req: req_params):
-        self.request(req.address, req.get_data, req.callback, req.period, req.start_on_creation)
-    def request(self, destination, get_data, callback, period, start_on_creation = False):
-        if address not in self.requesters:
-            self.requesters[address] = RequesterThreadSpace(context = self.context, \
-                                                            period = period, \
-                                                            get_data = get_data, \
-                                                            recieve_request = callback, \
-                                                            address = address)
-            if start_on_creation:
-                self.requesters[address].start()
-        else:
-            print("%s already exists in requester map" % (address))
-        
-
-    def cancel_periodic_requester(self, sock_addr):
-        if sock_addr in self.requesters:
-            if self.requesters[sock_addr].is_alive():
-                self.requesters[sock_addr].stop()
-        else:
-            print("%s does not exist" % (sock_addr))
-
+    ##
+    # @brief Same as spin
+    #
+    # @param serve_params Server parameters
     def spin_server(self, srv: serve_params):
         serve(srv.address, srv.callback, srv.start_on_creation)
+
     def serve(self, address, callback, period = -1, start_on_creation = False):
         if address not in self.servers:
             self.servers[address] = ServerThreadSpace(context = self.context, \
                                                       callback = callback, \
                                                       address = address, \
+                                                      exit = self.exit_signal, \
                                                       period = period)
             if start_on_creation:
                 self.servers[address].start()
         else:
             print("%s already exists in server map" % (address))
-
-    def terminate_server(self, address):
-        if address in self.servers:
-            if self.servers[address].is_alive():
-                self.servers[address].stop()
-        else:
-            print("%s does not exist " % (address))
